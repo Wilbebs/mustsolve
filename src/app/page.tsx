@@ -33,15 +33,15 @@ export default function Page() {
         </p>
 
         <p>
-          <font color="red">This is red text using font color.</font>
+          <span style={{ color: "red" }}>This is red text using font color.</span>
         </p>
 
         <p>
-          <font size="6">This is font size 6.</font>
+          <span style={{ fontSize: "xx-large" }}>This is font size 6.</span>
           <br />
-          <font size="3">This is base font size.</font>
+          <span style={{ fontSize: "medium" }}>This is base font size.</span>
           <br />
-          <font size="1">This is only 11px.</font>
+          <span style={{ fontSize: "x-small" }}>This is only 11px.</span>
         </p>
 
         <hr />
