@@ -8,13 +8,13 @@ export default function Page() {
         </header>
 
         <p>
-          Hello! My name is <b>Wilbert Hernandez</b>. I'm a passionate Computer Science student at the University of Florida. I specialize in full-stack development and enjoy turning complex ideas into functional and polished web applications.
+          Hello! My name is <b>Wilbert Hernandez</b>. I&apos;m a passionate Computer Science student at the University of Florida. I specialize in full-stack development and enjoy turning complex ideas into functional and polished web applications.
         </p>
         <p>
-          I’ve led development efforts on multiple projects, including gaming infrastructure for the Reitz Union and UF’s first Minecraft server. I’ve also worked as an IT intern, earned security clearance, and love building communities through code.
+          I&apos;ve led development efforts on multiple projects, including gaming infrastructure for the Reitz Union and UF&apos;s first Minecraft server. I&apos;ve also worked as an IT intern, earned security clearance, and love building communities through code.
         </p>
         <p>
-          My interests include frontend design, backend systems, computer graphics, AI, and performance optimization. I’m a big fan of clean UI/UX, TypeScript, and platforms like Firebase and Vercel.
+          My interests include frontend design, backend systems, computer graphics, AI, and performance optimization. I&apos;m a big fan of clean UI/UX, TypeScript, and platforms like Firebase and Vercel.
         </p>
 
         <h2>This is heading 2</h2>
