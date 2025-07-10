@@ -72,6 +72,14 @@ export default function RootLayout({
                 Leaderboard
               </Link>
             </li>
+            <li>
+              <Link
+                href="/modules"
+                className="transition duration-200 hover:text-white"
+              >
+                Modules
+              </Link>
+            </li>
           </ul>
 
           {/* Right login button */}
