@@ -1,10 +1,10 @@
 // File: src/app/problems/[slug]/page.tsx
 'use client';
 
-import { problems } from '@/data/problem';
 import { useParams } from 'next/navigation';
+import { problems } from '@/data/problem';
 import React, { useState, useRef, useEffect } from 'react';
-import { Play, Square, Maximize2, RotateCcw, ChevronDown } from 'lucide-react';
+import { Play, Maximize2, RotateCcw, ChevronDown } from 'lucide-react';
 
 type Language = 'JavaScript' | 'Python' | 'Java' | 'C++';
 
@@ -171,7 +171,9 @@ const CodeEditor = React.memo(({
   );
 });
 
-const executeCode = (code: string, language: Language, testCase: any): Promise<{ success: boolean; output: string; error?: string }> => {
+  CodeEditor.displayName = 'CodeEditor';
+
+  const executeCode = (code: string, language: Language, testCase: { nums: number[], target: number, expected: number[] }): Promise<{ success: boolean; output: string; error?: string }> => {
   return new Promise((resolve) => {
     // Simulate execution delay
     setTimeout(() => {
@@ -181,7 +183,7 @@ const executeCode = (code: string, language: Language, testCase: any): Promise<{
           resolve({
             success: false,
             output: '',
-            error: `Compilation Error\n\nSolution.java:4: error: cannot find symbol\n        System.out.println("Hello World");\n        ^\n  symbol:   variable System\n  location: class Solution\n1 error`
+            error: `Compilation Error\n\nSolution.java:4: error: cannot find symbol\n        System.out.println(&quot;Hello World&quot;);\n        ^\n  symbol:   variable System\n  location: class Solution\n1 error`
           });
           return;
         }
@@ -267,7 +269,6 @@ const executeCode = (code: string, language: Language, testCase: any): Promise<{
   });
 };
 
-
 export default function ProblemPage() {
   const { slug } = useParams() as { slug: string };
   const problem = problems.find((p) => p.slug === slug);
@@ -329,7 +330,7 @@ useEffect(() => {
 
   // Initialize with JavaScript template on mount only
   useEffect(() => {
-    setCode(languageTemplates['JavaScript']);
+    setCode(languageTemplates['Java']);
   }, []); // Empty dependency array - runs only once on mount
 
 
