@@ -82,8 +82,8 @@ export default function ModuleOnePage() {
           This audio module introduces the famous <strong>Two Sum</strong> problem — a classic and highly rated LeetCode challenge often asked in coding interviews. Learn the logic, the strategy, and how to build efficient solutions.
         </p>
 
-         {/* ADD THIS SECTION - Google Doc iframe */}
-        <div className="mb-8">
+{/* Google Doc iframe */}
+        <div className="mb-6">
           <h2 className="text-xl font-semibold mb-4 text-center text-gray-800">📚 Study Guide & Resources</h2>
           <div className="border border-gray-200 rounded-lg overflow-hidden shadow-sm">
             <iframe 
@@ -95,6 +95,25 @@ export default function ModuleOnePage() {
               title="Two Sum Complete Guide"
             />
           </div>
+        </div>
+
+        {/*Downloadable Resources */}
+        <div className="mb-8 bg-green-50 p-6 rounded-lg border border-green-200">
+          <h3 className="text-lg font-semibold mb-4 text-green-800 flex items-center gap-2">
+            📄 Downloadable Resources
+          </h3>
+          <a 
+            href="https://drive.google.com/uc?export=download&id=1rjYN_LBOd8aD-kfOqWd-N3YHs7XnefRT"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-3 p-3 bg-white rounded border border-green-300 hover:bg-green-100 transition-colors inline-flex"
+          >
+            <div className="text-red-600 text-2xl">📄</div>
+            <div>
+              <div className="font-medium text-gray-900">Two Sum Analysis.pdf</div>
+              <div className="text-sm text-gray-600">Complete solution implementations, complexity analysis, practice problems</div>
+            </div>
+          </a>
         </div>
 
         <div className="flex flex-col items-center">
