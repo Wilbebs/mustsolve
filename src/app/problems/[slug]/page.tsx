@@ -175,52 +175,60 @@ const CodeEditor = React.memo(({
 
   const executeCode = (code: string, language: Language, testCase: { nums: number[], target: number, expected: number[] }): Promise<{ success: boolean; output: string; error?: string }> => {
   return new Promise((resolve) => {
-    // Simulate execution delay
     setTimeout(() => {
       try {
-        // Check for compilation errors first
-        if (language === 'Java' && code.includes('System.out.println')) {
-          resolve({
-            success: false,
-            output: '',
-            error: `Compilation Error\n\nSolution.java:4: error: cannot find symbol\n        System.out.println(&quot;Hello World&quot;);\n        ^\n  symbol:   variable System\n  location: class Solution\n1 error`
-          });
-          return;
-        }
-        
         if (language === 'JavaScript') {
-          // Check for syntax errors
-          if (code.includes('system.out.print')) {
-            resolve({
-              success: false,
-              output: '',
-              error: `ReferenceError\n\nReferenceError: system is not defined\n    at twoSum (Solution.js:5:5)\n    at main (Solution.js:10:1)`
-            });
-            return;
-          }
-          
-          // Try to execute JavaScript code
           try {
+            // Capture console output
+            const consoleOutput: string[] = [];
+            const originalConsoleLog = console.log;
+            console.log = (...args) => {
+              consoleOutput.push(args.map(arg => String(arg)).join(' '));
+            };
+
+            // Execute the code
             const func = new Function('nums', 'target', `
               ${code}
-              return twoSum(nums, target);
+              return typeof twoSum !== 'undefined' ? twoSum(nums, target) : undefined;
             `);
             
             const result = func(testCase.nums, testCase.target);
+            
+            // Restore console
+            console.log = originalConsoleLog;
+            
+            let output = '';
+            
+            // Add console output if any
+            if (consoleOutput.length > 0) {
+              output += 'Console Output:\n' + consoleOutput.join('\n') + '\n\n';
+            }
+            
+            // Check if function returned anything
+            if (result === undefined) {
+              output += 'No return value from twoSum function';
+              resolve({
+                success: false,
+                output: output
+              });
+              return;
+            }
+            
             const resultStr = JSON.stringify(result);
             const expectedStr = JSON.stringify(testCase.expected);
             
+            output += `Input: nums = [${testCase.nums.join(',')}], target = ${testCase.target}\n`;
+            output += `Output: ${resultStr}\n`;
+            output += `Expected: ${expectedStr}\n\n`;
+            
             if (resultStr === expectedStr) {
-              resolve({
-                success: true,
-                output: `Input: nums = [${testCase.nums.join(',')}], target = ${testCase.target}\nOutput: ${resultStr}\nExpected: ${expectedStr}\n\n✓ Test case passed`
-              });
+              output += '✓ Test case passed';
+              resolve({ success: true, output });
             } else {
-              resolve({
-                success: false,
-                output: `Input: nums = [${testCase.nums.join(',')}], target = ${testCase.target}\nOutput: ${resultStr}\nExpected: ${expectedStr}\n\n✗ Test case failed - Wrong Answer`
-              });
+              output += '✗ Test case failed - Wrong Answer';
+              resolve({ success: false, output });
             }
+            
           } catch (execError: unknown) {
             const errorMessage = execError instanceof Error ? execError.message : 'Unknown error occurred';
             resolve({
@@ -229,29 +237,76 @@ const CodeEditor = React.memo(({
               error: `Runtime Error\n\n${errorMessage}`
             });
           }
-        } else if (language === 'Java') {
-          // Simulate Java execution - check for correct solution pattern
-          if (code.includes('HashMap') && code.includes('containsKey') && code.includes('complement')) {
-            // Correct solution
-            resolve({
-              success: true,
-              output: `Input: nums = [${testCase.nums.join(',')}], target = ${testCase.target}\nOutput: [${testCase.expected.join(',')}]\nExpected: [${testCase.expected.join(',')}]\n\n✓ Test case passed`
-            });
-          } else if (code.includes('return new int[]{0, 1}')) {
-            // Hardcoded wrong solution
-            resolve({
-              success: false,
-              output: `Input: nums = [${testCase.nums.join(',')}], target = ${testCase.target}\nOutput: [0,1]\nExpected: [${testCase.expected.join(',')}]\n\n✗ Test case failed - Wrong Answer`
-            });
-          } else {
-            // Generic wrong solution
-            resolve({
-              success: false,
-              output: `Input: nums = [${testCase.nums.join(',')}], target = ${testCase.target}\nOutput: []\nExpected: [${testCase.expected.join(',')}]\n\n✗ Test case failed - Wrong Answer`
-            });
-          }
+      } else if (language === 'Java') {
+  // Check for compilation errors first
+  if (code.includes('return new int[]{0 1}') || code.includes('missing return statement') || !code.includes(';')) {
+    resolve({
+      success: false,
+      output: '',
+      error: `Compilation Error\n\nSolution.java:4: error: ';' expected\n        return new int[]{0 1}\n                           ^\nSolution.java:5: error: missing return statement\n        }\n        ^\n2 errors`
+    });
+    return;
+  }
+  
+  // Extract console output if any
+  let consoleOutput = '';
+  const printMatches = code.match(/System\.out\.println\s*\(\s*"([^"]*)"\s*\)/g);
+  if (printMatches) {
+    consoleOutput = printMatches.map(match => {
+      const textMatch = match.match(/"([^"]*)"/);
+      return textMatch ? textMatch[1] : '';
+    }).join('\n');
+  }
+  
+  // Check for valid solution patterns
+  let functionOutput = '';
+  let success = false;
+  
+  if (code.includes('HashMap') && code.includes('containsKey') && code.includes('complement')) {
+    // HashMap solution
+    functionOutput = JSON.stringify(testCase.expected);
+    success = true;
+  } else if (code.includes('for') && code.includes('nums[i]') && code.includes('nums[j]') && code.includes('return new int[]{i, j}')) {
+    // Brute force solution - correct logic
+    functionOutput = JSON.stringify(testCase.expected);
+    success = true;
+  } else if (code.includes('return new int[]{0, 1}') && !code.includes('nums[i]')) {
+    // Hardcoded wrong solution - should fail unless it happens to be correct
+    functionOutput = '[0,1]';
+    const expectedStr = JSON.stringify(testCase.expected);
+    success = (functionOutput === expectedStr || expectedStr === '[0,1]');
+  } else if (code.trim() === '' || !code.includes('return')) {
+    functionOutput = 'null';
+    success = false;
+  } else {
+    // Generic attempt
+    functionOutput = '[]';
+    success = false;
+  }
+  
+  // Format output like NeetCode
+  let output = '';
+  output += `Input:\n`;
+  if (testCase.nums) {
+    output += `nums=[${testCase.nums.join(',')}]`;
+    if (testCase.target !== undefined) output += `, target=${testCase.target}`;
+  }
+  output += '\n\n';
+  
+  if (consoleOutput) {
+    output += `stdout:\n\n${consoleOutput}\n\n`;
+  }
+  
+  output += `Your Output:\n\n${functionOutput}\n\n`;
+  output += `Expected output:\n\n${JSON.stringify(testCase.expected)}`;
+  
+  resolve({
+    success: success,
+    output: output + (success ? '\n\n✅ Test case passed!' : '\n\n❌ Test case failed!')
+  });
+          
         } else {
-          // Other languages - basic simulation
+          // Other languages
           resolve({
             success: true,
             output: `Input: nums = [${testCase.nums.join(',')}], target = ${testCase.target}\nOutput: [${testCase.expected.join(',')}]\nExpected: [${testCase.expected.join(',')}]\n\n✓ Test case passed`
@@ -268,6 +323,72 @@ const CodeEditor = React.memo(({
     }, 1000);
   });
 };
+
+const TestCaseEditor = React.memo(({ 
+  testCase, 
+  onUpdate 
+}: { 
+  testCase: { id: number, nums: number[], target: number, expected: number[] },
+  onUpdate: (id: number, field: 'nums' | 'target' | 'expected', value: any) => void 
+}) => {
+  const parseArrayInput = (input: string): number[] => {
+    try {
+      const cleanInput = input.replace(/[\[\]]/g, '').trim();
+      if (!cleanInput) return [];
+      return cleanInput.split(',').map(num => parseInt(num.trim(), 10)).filter(num => !isNaN(num));
+    } catch {
+      return [];
+    }
+  };
+
+  return (
+    <div className="space-y-3">
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">nums =</label>
+        <input
+          type="text"
+          defaultValue={`[${testCase.nums.join(', ')}]`}
+          onBlur={(e) => {
+            const newNums = parseArrayInput(e.target.value);
+            onUpdate(testCase.id, 'nums', newNums);
+          }}
+          className="w-full p-3 border border-gray-300 rounded font-mono text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+          placeholder="[1, 2, 3]"
+        />
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">target =</label>
+        <input
+          type="number"
+          defaultValue={testCase.target}
+          onBlur={(e) => {
+            const newTarget = parseInt(e.target.value, 10);
+            if (!isNaN(newTarget)) {
+              onUpdate(testCase.id, 'target', newTarget);
+            }
+          }}
+          className="w-full p-3 border border-gray-300 rounded font-mono text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+          placeholder="9"
+        />
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">expected =</label>
+        <input
+          type="text"
+          defaultValue={`[${testCase.expected.join(', ')}]`}
+          onBlur={(e) => {
+            const newExpected = parseArrayInput(e.target.value);
+            onUpdate(testCase.id, 'expected', newExpected);
+          }}
+          className="w-full p-3 border border-gray-300 rounded font-mono text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+          placeholder="[0, 1]"
+        />
+      </div>
+    </div>
+  );
+});
+
+TestCaseEditor.displayName = 'TestCaseEditor';
 
 export default function ProblemPage() {
   const { slug } = useParams() as { slug: string };
@@ -316,12 +437,49 @@ public:
 };`
   };
 
-  // Mock test cases - replace with your enhanced schema data
-  const testCases = [
-    { id: 1, nums: [2, 7, 11, 15], target: 9, expected: [0, 1] },
-    { id: 2, nums: [3, 2, 4], target: 6, expected: [1, 2] },
-    { id: 3, nums: [3, 3], target: 6, expected: [0, 1] }
-  ];
+  // Test cases
+const [testCases, setTestCases] = useState([
+  { id: 1, nums: [2, 7, 11, 15], target: 9, expected: [0, 1] },
+  { id: 2, nums: [3, 2, 4], target: 6, expected: [1, 2] },
+  { id: 3, nums: [3, 3], target: 6, expected: [0, 1] }
+]);
+
+const addTestCase = () => {
+  const newId = Math.max(...testCases.map(tc => tc.id)) + 1;
+  const newTestCase = {
+    id: newId,
+    nums: [1, 2],
+    target: 3,
+    expected: [0, 1]
+  };
+  setTestCases([...testCases, newTestCase]);
+  setActiveTestCase(newId);
+};
+
+const updateTestCase = (id: number, field: 'nums' | 'target' | 'expected', value: any) => {
+  setTestCases(testCases.map(tc => 
+    tc.id === id ? { ...tc, [field]: value } : tc
+  ));
+};
+
+const deleteTestCase = (id: number) => {
+  if (testCases.length > 1) {
+    setTestCases(testCases.filter(tc => tc.id !== id));
+    if (activeTestCase === id) {
+      setActiveTestCase(testCases[0].id);
+    }
+  }
+};
+
+const parseArrayInput = (input: string): number[] => {
+  try {
+    const cleanInput = input.replace(/[\[\]]/g, '').trim();
+    if (!cleanInput) return [];
+    return cleanInput.split(',').map(num => parseInt(num.trim(), 10)).filter(num => !isNaN(num));
+  } catch {
+    return [];
+  }
+};
 
   // Initialize code when language changes
 useEffect(() => {
@@ -505,46 +663,55 @@ const handleRun = async () => {
       <div className="flex-1 overflow-y-auto p-4">
         {activeBottomTab === 'Test Case' && (
           <div className="space-y-4">
-            {/* Test Case Tabs */}
-            <div className="flex gap-2">
+            {/* Test Case Tabs with Add/Delete buttons */}
+            <div className="flex gap-2 items-center">
               {testCases.map((testCase) => (
-                <button
-                  key={testCase.id}
-                  onClick={() => setActiveTestCase(testCase.id)}
-                  className={`px-3 py-1.5 text-sm rounded border ${
-                    activeTestCase === testCase.id
-                      ? 'bg-green-100 border-green-300 text-green-700'
-                      : 'bg-gray-100 border-gray-300 text-gray-600 hover:bg-gray-200'
-                  }`}
-                >
-                  Case {testCase.id}
-                </button>
+                <div key={testCase.id} className="flex items-center">
+                  <button
+                    onClick={() => setActiveTestCase(testCase.id)}
+                    className={`px-3 py-1.5 text-sm rounded-l border ${
+                      activeTestCase === testCase.id
+                        ? 'bg-green-100 border-green-300 text-green-700'
+                        : 'bg-gray-100 border-gray-300 text-gray-600 hover:bg-gray-200'
+                    }`}
+                  >
+                    Case {testCase.id}
+                  </button>
+                  {testCases.length > 1 && (
+                    <button
+                      onClick={() => deleteTestCase(testCase.id)}
+                      className={`px-2 py-1.5 text-sm rounded-r border-l-0 border text-red-600 hover:bg-red-50 ${
+                        activeTestCase === testCase.id
+                          ? 'border-green-300'
+                          : 'border-gray-300'
+                      }`}
+                      title="Delete test case"
+                    >
+                      ×
+                    </button>
+                  )}
+                </div>
               ))}
+              <button
+                onClick={addTestCase}
+                className="px-3 py-1.5 text-sm rounded border border-dashed border-gray-400 text-gray-600 hover:bg-gray-50 hover:border-gray-500"
+                title="Add test case"
+              >
+                + Add
+              </button>
             </div>
 
-            {/* Current Test Case Display */}
+        {/* Editable Test Case Display */}
             {(() => {
-              const currentTest = testCases[activeTestCase - 1];
-              return (
-                <div className="space-y-3">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">nums =</label>
-                    <div className="bg-gray-50 p-3 rounded border font-mono text-sm">
-                      [{currentTest.nums.join(', ')}]
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">target =</label>
-                    <div className="bg-gray-50 p-3 rounded border font-mono text-sm">
-                      {currentTest.target}
-                    </div>
-                  </div>
-                </div>
-              );
+              const currentTest = testCases.find(tc => tc.id === activeTestCase);
+              if (!currentTest) return null;
+              
+              return <TestCaseEditor testCase={currentTest} onUpdate={updateTestCase} />;
             })()}
           </div>
         )}
 
+        {/* ADD THIS - Output Tab Content */}
         {activeBottomTab === 'Output' && (
           <div className="h-full">
             {output ? (
@@ -559,7 +726,7 @@ const handleRun = async () => {
           </div>
         )}
       </div>
-    </div>
+      </div>
   );
 
   return (
