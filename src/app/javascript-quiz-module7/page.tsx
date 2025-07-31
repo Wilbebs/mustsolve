@@ -66,7 +66,7 @@ export default function JavaScriptQuizModule7() {
 
     function generateQuiz(questions: any[], quizContainer: HTMLElement, resultsContainer: HTMLElement, submitButton: HTMLElement) {
       function showQuestions(questions: any[], quizContainer: HTMLElement) {
-        let output = [];
+        const output = [];
         let answers;
 
         for(let i=0; i<questions.length; i++){
@@ -93,7 +93,7 @@ export default function JavaScriptQuizModule7() {
       }
 
       function showResults(questions: any[], quizContainer: HTMLElement, resultsContainer: HTMLElement) {
-        let answerContainers = quizContainer.querySelectorAll('.answers-container');
+        const answerContainers = quizContainer.querySelectorAll('.answers-container');
         let userAnswer = '';
         let numCorrect = 0;
         
