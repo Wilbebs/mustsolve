@@ -10,7 +10,7 @@ export default function JavaScriptQuizModule7() {
 
   useEffect(() => {
     // Custom questions for MustSolve - Data Structures & Algorithms focused
-    var myQuestions = [
+    const myQuestions = [
       {
         question: "What is the time complexity of the optimal Two Sum solution using a hash map?",
         answers: {
@@ -58,21 +58,21 @@ export default function JavaScriptQuizModule7() {
       }
     ];
 
-    var quizContainer = quizRef.current;
-    var resultsContainer = resultsRef.current;
-    var submitButton = submitRef.current;
+    const quizContainer = quizRef.current;
+    const resultsContainer = resultsRef.current;
+    const submitButton = submitRef.current;
 
     if (!quizContainer || !resultsContainer || !submitButton) return;
 
     function generateQuiz(questions: any[], quizContainer: HTMLElement, resultsContainer: HTMLElement, submitButton: HTMLElement) {
       function showQuestions(questions: any[], quizContainer: HTMLElement) {
-        var output = [];
-        var answers;
+        let output = [];
+        let answers;
 
-        for(var i=0; i<questions.length; i++){
+        for(let i=0; i<questions.length; i++){
           answers = [];
 
-          for(let letter in questions[i].answers){
+          for(const letter in questions[i].answers){
             answers.push(
               '<label class="answer-label">'
                 + '<input type="radio" name="question'+i+'" value="'+letter+'">'
@@ -93,11 +93,11 @@ export default function JavaScriptQuizModule7() {
       }
 
       function showResults(questions: any[], quizContainer: HTMLElement, resultsContainer: HTMLElement) {
-        var answerContainers = quizContainer.querySelectorAll('.answers-container');
-        var userAnswer = '';
-        var numCorrect = 0;
+        let answerContainers = quizContainer.querySelectorAll('.answers-container');
+        let userAnswer = '';
+        let numCorrect = 0;
         
-        for(var i=0; i<questions.length; i++){
+        for(let i=0; i<questions.length; i++){
           userAnswer = (answerContainers[i].querySelector('input[name=question'+i+']:checked') as HTMLInputElement)?.value || '';
           
           if(userAnswer===questions[i].correctAnswer){
