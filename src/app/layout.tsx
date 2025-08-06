@@ -1,12 +1,12 @@
-// File: /app/layout.tsx
+// File: src/app/layout.tsx
 
 import "./globals.css";
 import Link from "next/link";
 import Image from "next/image";
 
 export const metadata = {
-  title: "MustSolve",
-  description: "Essential LeetCode Training",
+  title: "MustSolve - EME4320",
+  description: "Essential LeetCode Training for EME4320",
 };
 
 export default function RootLayout({
@@ -30,8 +30,8 @@ export default function RootLayout({
             />
           </div>
 
-          {/* Center nav links */}
-          <ul className="absolute left-1/2 transform -translate-x-1/2 flex gap-8 text-lg text-green-400">
+          {/* Center nav links - Updated for EME4320 requirements */}
+          <ul className="absolute left-1/2 transform -translate-x-1/2 flex gap-6 text-lg text-green-400">
             <li>
               <Link
                 href="/"
@@ -42,34 +42,18 @@ export default function RootLayout({
             </li>
             <li>
               <Link
-                href="/practice"
+                href="/course-overview"
                 className="transition duration-200 hover:text-white"
               >
-                Practice
+                Course Overview
               </Link>
             </li>
             <li>
               <Link
-                href="/lessons"
+                href="/syllabus"
                 className="transition duration-200 hover:text-white"
               >
-                Lessons
-              </Link>
-            </li>
-            <li>
-              <Link
-                href="/resources"
-                className="transition duration-200 hover:text-white"
-              >
-                Resources
-              </Link>
-            </li>
-            <li>
-              <Link
-                href="/leaderboard"
-                className="transition duration-200 hover:text-white"
-              >
-                Leaderboard
+                Syllabus
               </Link>
             </li>
             <li>
@@ -78,6 +62,22 @@ export default function RootLayout({
                 className="transition duration-200 hover:text-white"
               >
                 Modules
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="/additional-resources"
+                className="transition duration-200 hover:text-white"
+              >
+                Additional Resources
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="/instructor"
+                className="transition duration-200 hover:text-white"
+              >
+                Instructor
               </Link>
             </li>
           </ul>
@@ -93,7 +93,7 @@ export default function RootLayout({
           </div>
         </nav>
 
-        <main className="px-6 py-8 max-w-5xl mx-auto bg-white">{children}</main>
+        <main className="bg-white">{children}</main>
       </body>
     </html>
   );
