@@ -43,14 +43,14 @@ export default function CourseOverviewPage() {
     }
   };
 
-  const floatingAnimation = {
-    y: [0, -10, 0],
-    transition: {
-      duration: 3,
-      repeat: Infinity,
-      ease: "easeInOut"
-    }
-  };
+    const floatingAnimation = {
+        y: [0, -10, 0],
+        transition: {
+            duration: 3,
+            repeat: Infinity,
+            ease: "easeInOut" as any
+        }
+    };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-800 to-black relative overflow-hidden">
@@ -96,7 +96,14 @@ export default function CourseOverviewPage() {
           variants={containerVariants}
         >
           <motion.div
-            animate={floatingAnimation}
+            animate={{
+                y: [0, -10, 0],
+                transition: {
+                    duration: 3,
+                    repeat: Infinity,
+                    ease: "easeInOut"
+                }
+            }}
             className="inline-block mb-8"
           >
             <div className="relative">
