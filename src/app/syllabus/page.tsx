@@ -45,14 +45,14 @@ export default function SyllabusPage() {
     }
   };
 
-  const floatingAnimation = {
-    y: [0, -10, 0],
-    transition: {
-      duration: 3,
-      repeat: Infinity,
-      ease: "easeInOut"
-    }
-  };
+    const floatingAnimation = {
+        y: [0, -10, 0],
+        transition: {
+            duration: 3,
+            repeat: Infinity,
+            ease: "easeInOut" as const
+        }
+    };
 
   const dailySchedule = [
     {
