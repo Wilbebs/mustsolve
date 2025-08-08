@@ -5,8 +5,8 @@ import Link from "next/link";
 import Image from "next/image";
 
 export const metadata = {
-  title: "MustSolve - EME4320",
-  description: "Essential LeetCode Training for EME4320",
+  title: "MustSolve - Essential LeetCode Training",
+  description: "Essential LeetCode Training Platform",
 };
 
 export default function RootLayout({
@@ -17,79 +17,77 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="bg-white text-gray-900 font-sans select-none">
-        <nav className="relative flex items-center justify-between px-6 py-4 border-b border-green-400 bg-black">
-          {/* Left logo */}
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold text-green-400">MustSolve</h1>
-            <Image
-              src="/logo/crt-logo.svg"
-              alt="CRT monitor logo with code"
-              width={28}
-              height={28}
-              className="rounded-md border border-green-400"
-            />
-          </div>
+        <nav className="sticky top-0 z-50 bg-black/95 backdrop-blur-lg border-b border-green-400/20">
+          <div className="max-w-8xl mx-auto px-8 py-5">
+            <div className="flex items-center justify-between">
+              {/* Logo */}
+              <Link href="/" className="flex items-center gap-4 group">
+                <h1 className="text-3xl font-bold bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent">
+                  MustSolve
+                </h1>
+                <Image
+                  src="/logo/crt-logo.svg"
+                  alt="MustSolve Logo"
+                  width={32}
+                  height={32}
+                  className="rounded-lg border border-green-400/30 group-hover:border-green-400 transition-colors duration-200"
+                />
+              </Link>
 
-          {/* Center nav links - Updated for EME4320 requirements */}
-          <ul className="absolute left-1/2 transform -translate-x-1/2 flex gap-6 text-lg text-green-400">
-            <li>
-              <Link
-                href="/"
-                className="transition duration-200 hover:text-white"
-              >
-                Home
-              </Link>
-            </li>
-            <li>
-              <Link
-                href="/course-overview"
-                className="transition duration-200 hover:text-white"
-              >
-                Course Overview
-              </Link>
-            </li>
-            <li>
-              <Link
-                href="/syllabus"
-                className="transition duration-200 hover:text-white"
-              >
-                Syllabus
-              </Link>
-            </li>
-            <li>
-              <Link
-                href="/modules"
-                className="transition duration-200 hover:text-white"
-              >
-                Modules
-              </Link>
-            </li>
-            <li>
-              <Link
-                href="/additional-resources"
-                className="transition duration-200 hover:text-white"
-              >
-                Additional Resources
-              </Link>
-            </li>
-            <li>
-              <Link
-                href="/instructor"
-                className="transition duration-200 hover:text-white"
-              >
-                Instructor
-              </Link>
-            </li>
-          </ul>
+              {/* Navigation Links */}
+              <div className="flex items-center space-x-3">
+                <Link
+                  href="/"
+                  className="px-5 py-2.5 rounded-full text-gray-300 hover:text-white hover:bg-green-500/20 active:bg-green-500/30 active:scale-95 transition-all duration-200 font-medium border border-transparent hover:border-green-400/30"
+                >
+                  Home
+                </Link>
+                <Link
+                  href="/course-overview"
+                  className="px-5 py-2.5 rounded-full text-gray-300 hover:text-white hover:bg-green-500/20 active:bg-green-500/30 active:scale-95 transition-all duration-200 font-medium border border-transparent hover:border-green-400/30"
+                >
+                  Course Overview
+                </Link>
+                <Link
+                  href="/practice"
+                  className="px-5 py-2.5 rounded-full text-gray-300 hover:text-white hover:bg-green-500/20 active:bg-green-500/30 active:scale-95 transition-all duration-200 font-medium border border-transparent hover:border-green-400/30"
+                >
+                  Practice
+                </Link>
+                <Link
+                  href="/syllabus"
+                  className="px-5 py-2.5 rounded-full text-gray-300 hover:text-white hover:bg-green-500/20 active:bg-green-500/30 active:scale-95 transition-all duration-200 font-medium border border-transparent hover:border-green-400/30"
+                >
+                  Syllabus
+                </Link>
+                <Link
+                  href="/modules"
+                  className="px-5 py-2.5 rounded-full text-gray-300 hover:text-white hover:bg-green-500/20 active:bg-green-500/30 active:scale-95 transition-all duration-200 font-medium border border-transparent hover:border-green-400/30"
+                >
+                  Modules
+                </Link>
+                <Link
+                  href="/additional-resources"
+                  className="px-5 py-2.5 rounded-full text-gray-300 hover:text-white hover:bg-green-500/20 active:bg-green-500/30 active:scale-95 transition-all duration-200 font-medium border border-transparent hover:border-green-400/30"
+                >
+                  Resources
+                </Link>
+                <Link
+                  href="/instructor"
+                  className="px-5 py-2.5 rounded-full text-gray-300 hover:text-white hover:bg-green-500/20 active:bg-green-500/30 active:scale-95 transition-all duration-200 font-medium border border-transparent hover:border-green-400/30"
+                >
+                  Instructor
+                </Link>
+              </div>
 
-          {/* Right login button */}
-          <div>
-            <Link
-              href="/login"
-              className="text-green-400 border border-green-400 px-4 py-1 rounded hover:bg-green-400 hover:text-black transition-colors duration-200"
-            >
-              Login
-            </Link>
+              {/* Login Button */}
+              <Link
+                href="/login"
+                className="px-6 py-2.5 bg-transparent border-2 border-green-400 text-green-400 rounded-full hover:bg-green-400 hover:text-black hover:shadow-lg hover:shadow-green-400/25 active:scale-95 transition-all duration-200 font-semibold"
+              >
+                Login
+              </Link>
+            </div>
           </div>
         </nav>
 
