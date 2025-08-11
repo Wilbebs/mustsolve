@@ -5,8 +5,8 @@ import Link from "next/link";
 import Image from "next/image";
 
 export const metadata = {
-  title: "MustSolve - Essential LeetCode Training",
-  description: "Essential LeetCode Training Platform",
+  title: "MustSolve - LeetCode Practice Platform",
+  description: "Practice Data Structures and Algorithms",
 };
 
 export default function RootLayout({
@@ -34,19 +34,13 @@ export default function RootLayout({
                 />
               </Link>
 
-              {/* Navigation Links */}
-              <div className="flex items-center space-x-3">
+              {/* Navigation Links - Centered */}
+              <div className="absolute left-1/2 transform -translate-x-1/2 flex items-center space-x-3">
                 <Link
                   href="/"
                   className="px-5 py-2.5 rounded-full text-gray-300 hover:text-white hover:bg-green-500/20 active:bg-green-500/30 active:scale-95 transition-all duration-200 font-medium border border-transparent hover:border-green-400/30"
                 >
                   Home
-                </Link>
-                <Link
-                  href="/course-overview"
-                  className="px-5 py-2.5 rounded-full text-gray-300 hover:text-white hover:bg-green-500/20 active:bg-green-500/30 active:scale-95 transition-all duration-200 font-medium border border-transparent hover:border-green-400/30"
-                >
-                  Course Overview
                 </Link>
                 <Link
                   href="/practice"
@@ -55,28 +49,10 @@ export default function RootLayout({
                   Practice
                 </Link>
                 <Link
-                  href="/syllabus"
+                  href="/friends"
                   className="px-5 py-2.5 rounded-full text-gray-300 hover:text-white hover:bg-green-500/20 active:bg-green-500/30 active:scale-95 transition-all duration-200 font-medium border border-transparent hover:border-green-400/30"
                 >
-                  Syllabus
-                </Link>
-                <Link
-                  href="/modules"
-                  className="px-5 py-2.5 rounded-full text-gray-300 hover:text-white hover:bg-green-500/20 active:bg-green-500/30 active:scale-95 transition-all duration-200 font-medium border border-transparent hover:border-green-400/30"
-                >
-                  Modules
-                </Link>
-                <Link
-                  href="/additional-resources"
-                  className="px-5 py-2.5 rounded-full text-gray-300 hover:text-white hover:bg-green-500/20 active:bg-green-500/30 active:scale-95 transition-all duration-200 font-medium border border-transparent hover:border-green-400/30"
-                >
-                  Resources
-                </Link>
-                <Link
-                  href="/instructor"
-                  className="px-5 py-2.5 rounded-full text-gray-300 hover:text-white hover:bg-green-500/20 active:bg-green-500/30 active:scale-95 transition-all duration-200 font-medium border border-transparent hover:border-green-400/30"
-                >
-                  Instructor
+                  Friends
                 </Link>
               </div>
 

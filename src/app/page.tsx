@@ -9,7 +9,6 @@ import { motion, AnimatePresence } from "framer-motion";
 
 export default function HomePage() {
   const [isVisible, setIsVisible] = useState(false);
-  const [videoLoaded, setVideoLoaded] = useState(false);
   const [activeFeature, setActiveFeature] = useState(0);
 
   useEffect(() => {
@@ -28,21 +27,21 @@ export default function HomePage() {
   const features = [
     {
       icon: "🎯",
-      title: "5 Essential Problems",
-      description: "Master the most critical LeetCode problems that appear in 80% of technical interviews",
-      details: ["Two Sum & Hash Maps", "Linked List Manipulation", "Stack Operations", "Tree Traversals", "Optimized Solutions"]
+      title: "Structured Practice",
+      description: "Organized problem sets across different data structures and algorithm categories",
+      details: ["Arrays & Hashing", "Two Pointers", "Sliding Window", "Stacks", "Trees", "Dynamic Programming"]
     },
     {
-      icon: "🤖", 
-      title: "AI-Powered Interviews",
-      description: "Practice with cutting-edge AI that simulates real interview conditions",
-      details: ["Real-time feedback", "Complexity analysis", "Communication skills", "Follow-up questions", "Performance tracking"]
+      icon: "📊", 
+      title: "Progress Tracking",
+      description: "Monitor your solving progress and improvement over time",
+      details: ["Completion tracking", "Difficulty progression", "Time analysis", "Solution quality", "Leaderboard ranking"]
     },
     {
       icon: "⚡",
-      title: "10-Hour Intensive",
-      description: "Structured micro-course designed for maximum learning efficiency",
-      details: ["Daily 2-hour sessions", "Progressive difficulty", "Immediate practice", "Reflection exercises", "Proven methodology"]
+      title: "Real Coding Environment",
+      description: "Practice in an environment similar to actual technical interviews",
+      details: ["Multi-language support", "Test case validation", "Real-time feedback", "Code execution", "Performance metrics"]
     }
   ];
 
@@ -130,14 +129,14 @@ export default function HomePage() {
             className="text-7xl font-black bg-gradient-to-r from-green-400 via-blue-400 to-purple-400 bg-clip-text text-transparent mb-6"
             variants={itemVariants}
           >
-            Master Technical Interviews
+            Master Data Structures & Algorithms
           </motion.h1>
           
           <motion.p 
             className="text-2xl text-gray-300 mt-4 max-w-4xl leading-relaxed"
             variants={itemVariants}
           >
-            Essential LeetCode Training - The most efficient path to landing your dream job at top tech companies
+            Practice coding problems, track your progress, and prepare for technical interviews
           </motion.p>
 
           <motion.div 
@@ -146,135 +145,30 @@ export default function HomePage() {
           >
             <div className="relative group">
               <div className="absolute inset-0 bg-gradient-to-r from-green-400 to-emerald-500 rounded-2xl blur-xl opacity-75 group-hover:opacity-100 transition-opacity duration-300 animate-pulse"></div>
-              <Link href="/course-overview">
+              <Link href="/practice">
                 <motion.button
                   className="relative bg-black/80 backdrop-blur-sm text-white px-8 py-4 rounded-2xl font-bold text-lg border border-green-400/50 group-hover:border-green-400 transition-all duration-300"
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >
-                  🚀 Start Your Journey
+                  🚀 Start Practicing
                 </motion.button>
               </Link>
             </div>
             
             <div className="relative group">
               <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-purple-500 rounded-2xl blur-xl opacity-75 group-hover:opacity-100 transition-opacity duration-300 animate-pulse"></div>
-              <Link href="#course-overview-video">
+              <Link href="/friends">
                 <motion.button
                   className="relative bg-black/80 backdrop-blur-sm text-white px-8 py-4 rounded-2xl font-bold text-lg border border-blue-400/50 group-hover:border-blue-400 transition-all duration-300"
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >
-                  🎥 Watch Overview
+                  👥 Connect with Friends
                 </motion.button>
               </Link>
             </div>
           </motion.div>
-        </motion.section>
-
-        {/* Course Overview Video Section */}
-        <motion.section 
-          id="course-overview-video"
-          className="py-20"
-          initial={{ opacity: 0, y: 50 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-          viewport={{ once: true }}
-        >
-          <div className="max-w-6xl mx-auto">
-            <div className="text-center mb-16">
-              <h2 className="text-5xl font-bold text-white mb-6">Course Overview</h2>
-              <p className="text-xl text-gray-300 max-w-3xl mx-auto">
-                Get an in-depth look at what makes Essential LeetCode Training the most effective 
-                interview preparation course available
-              </p>
-            </div>
-
-            <div className="bg-black/60 backdrop-blur-sm rounded-3xl p-8 border border-green-500/30 shadow-2xl">
-              {/* Video Container */}
-              <div className="relative group mb-8">
-                <div className="absolute inset-0 bg-gradient-to-r from-green-400 to-blue-500 rounded-2xl blur-xl opacity-30 group-hover:opacity-50 transition-opacity duration-300"></div>
-                <div className="relative bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-6 border border-green-400/30">
-                  <div className="aspect-video relative rounded-xl overflow-hidden shadow-2xl">
-                    {!videoLoaded && (
-                      <div className="absolute inset-0 bg-gray-800 flex items-center justify-center">
-                        <div className="text-center">
-                          <div className="w-16 h-16 border-4 border-green-400 border-t-transparent rounded-full animate-spin mb-4 mx-auto"></div>
-                          <p className="text-gray-300">Loading course overview...</p>
-                        </div>
-                      </div>
-                    )}
-                    <iframe
-                      src="https://www.youtube.com/embed/CClTpsHaOG4?enablejsapi=1&rel=0&modestbranding=1"
-                      title="Essential LeetCode Training - Course Overview"
-                      frameBorder="0"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                      allowFullScreen
-                      className="w-full h-full rounded-xl"
-                      onLoad={() => setVideoLoaded(true)}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Video Information */}
-              <div className="grid md:grid-cols-2 gap-8">
-                <div className="p-6 bg-gray-800/50 rounded-2xl border border-gray-700">
-                  <h3 className="text-2xl font-bold text-green-400 mb-4 flex items-center gap-3">
-                    <span className="text-3xl">📚</span>
-                    What You'll Discover
-                  </h3>
-                  <ul className="space-y-3 text-gray-300">
-                    <li className="flex items-center gap-3">
-                      <span className="w-2 h-2 rounded-full bg-green-400"></span>
-                      Complete course structure and methodology
-                    </li>
-                    <li className="flex items-center gap-3">
-                      <span className="w-2 h-2 rounded-full bg-green-400"></span>
-                      The 5 essential problems and why they matter
-                    </li>
-                    <li className="flex items-center gap-3">
-                      <span className="w-2 h-2 rounded-full bg-green-400"></span>
-                      AI-powered learning and assessment tools
-                    </li>
-                    <li className="flex items-center gap-3">
-                      <span className="w-2 h-2 rounded-full bg-green-400"></span>
-                      Success stories and career outcomes
-                    </li>
-                    <li className="flex items-center gap-3">
-                      <span className="w-2 h-2 rounded-full bg-green-400"></span>
-                      How to maximize your learning experience
-                    </li>
-                  </ul>
-                </div>
-
-                <div className="p-6 bg-gray-800/50 rounded-2xl border border-gray-700">
-                  <h3 className="text-2xl font-bold text-blue-400 mb-4 flex items-center gap-3">
-                    <span className="text-3xl">⏱️</span>
-                    Course Highlights
-                  </h3>
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center p-3 bg-gray-700/50 rounded-lg">
-                      <span className="text-gray-300">Duration</span>
-                      <span className="text-white font-semibold">10 Hours Total</span>
-                    </div>
-                    <div className="flex justify-between items-center p-3 bg-gray-700/50 rounded-lg">
-                      <span className="text-gray-300">Format</span>
-                      <span className="text-white font-semibold">5 Daily Sessions</span>
-                    </div>
-                    <div className="flex justify-between items-center p-3 bg-gray-700/50 rounded-lg">
-                      <span className="text-gray-300">Difficulty</span>
-                      <span className="text-white font-semibold">All Levels</span>
-                    </div>
-                    <div className="flex justify-between items-center p-3 bg-gray-700/50 rounded-lg">
-                      <span className="text-gray-300">Success Rate</span>
-                      <span className="text-green-400 font-semibold">95%+</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
         </motion.section>
 
         {/* Interactive Features Section */}
@@ -289,7 +183,7 @@ export default function HomePage() {
             <div className="text-center mb-16">
               <h2 className="text-5xl font-bold text-white mb-6">Why Choose MustSolve?</h2>
               <p className="text-xl text-gray-300">
-                Revolutionary features that set us apart from traditional interview prep
+                Comprehensive platform designed for efficient learning and practice
               </p>
             </div>
 
@@ -356,11 +250,11 @@ export default function HomePage() {
                       <div className="text-center">
                         <div className="text-8xl mb-6">{features[activeFeature].icon}</div>
                         <div className="text-6xl font-black text-transparent bg-gradient-to-r from-green-400 to-blue-400 bg-clip-text mb-4">
-                          {activeFeature === 0 ? "5" : activeFeature === 1 ? "AI" : "10h"}
+                          {activeFeature === 0 ? "7+" : activeFeature === 1 ? "100%" : "Real"}
                         </div>
                         <p className="text-gray-300 text-lg">
-                          {activeFeature === 0 ? "Essential Problems" : 
-                           activeFeature === 1 ? "Powered Learning" : "Intensive Course"}
+                          {activeFeature === 0 ? "Problem Categories" : 
+                           activeFeature === 1 ? "Progress Visibility" : "Coding Environment"}
                         </p>
                       </div>
                     </div>
@@ -380,13 +274,13 @@ export default function HomePage() {
           viewport={{ once: true }}
         >
           <div className="bg-black/60 backdrop-blur-sm rounded-3xl p-12 border border-purple-500/30">
-            <h2 className="text-4xl font-bold text-white text-center mb-12">Proven Results</h2>
+            <h2 className="text-4xl font-bold text-white text-center mb-12">Platform Stats</h2>
             <div className="grid md:grid-cols-4 gap-8 text-center">
               {[
-                { number: "500+", label: "Students Trained", icon: "👥" },
-                { number: "95%", label: "Success Rate", icon: "🎯" },
-                { number: "10hrs", label: "Total Duration", icon: "⏱️" },
-                { number: "5", label: "Essential Problems", icon: "💡" }
+                { number: "75+", label: "Practice Problems", icon: "💡" },
+                { number: "7", label: "Categories", icon: "📚" },
+                { number: "4", label: "Languages", icon: "💻" },
+                { number: "Real-time", label: "Code Execution", icon: "⚡" }
               ].map((stat, index) => (
                 <motion.div
                   key={index}
@@ -413,35 +307,34 @@ export default function HomePage() {
           transition={{ duration: 0.6 }}
           viewport={{ once: true }}
         >
-          <h2 className="text-5xl font-bold text-white mb-6">Ready to Transform Your Career?</h2>
+          <h2 className="text-5xl font-bold text-white mb-6">Ready to Level Up Your Skills?</h2>
           <p className="text-xl text-gray-300 mt-3 max-w-2xl mx-auto mb-8">
-            Join the ranks of successful engineers who landed their dream jobs through systematic, 
-            AI-powered interview preparation.
+            Start solving problems, track your progress, and prepare for your next technical interview.
           </p>
           
           <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
             <div className="relative group">
               <div className="absolute inset-0 bg-gradient-to-r from-green-400 via-emerald-500 to-green-600 rounded-2xl blur-xl opacity-75 group-hover:opacity-100 transition-opacity duration-300 animate-pulse"></div>
-              <Link href="/course-overview">
+              <Link href="/practice">
                 <motion.button
                   className="relative bg-black/80 backdrop-blur-sm text-white px-12 py-6 rounded-2xl font-bold text-xl border border-green-400/50 group-hover:border-green-400 transition-all duration-300"
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >
-                  Start Learning Today
+                  Start Practicing Now
                 </motion.button>
               </Link>
             </div>
             
             <div className="relative group">
               <div className="absolute inset-0 bg-gradient-to-r from-blue-400 via-purple-500 to-pink-600 rounded-2xl blur-xl opacity-75 group-hover:opacity-100 transition-opacity duration-300 animate-pulse"></div>
-              <Link href="/syllabus">
+              <Link href="/friends">
                 <motion.button
                   className="relative bg-black/80 backdrop-blur-sm text-white px-12 py-6 rounded-2xl font-bold text-xl border border-blue-400/50 group-hover:border-blue-400 transition-all duration-300"
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >
-                  View Syllabus
+                  See Friends Progress
                 </motion.button>
               </Link>
             </div>
@@ -451,12 +344,10 @@ export default function HomePage() {
         {/* Footer */}
         <footer className="text-center text-sm text-gray-500 py-12 mt-20">
           <div className="bg-black/30 backdrop-blur-sm rounded-2xl p-8 border border-gray-700">
-            <p className="text-lg">MustSolve &copy; 2025. Transforming careers through essential interview preparation.</p>
+            <p className="text-lg">MustSolve &copy; 2025. Master algorithms, ace interviews.</p>
             <div className="flex justify-center gap-8 mt-6">
-              <Link href="/course-overview" className="text-green-400 hover:text-green-300 transition-colors">Course Overview</Link>
-              <Link href="/syllabus" className="text-green-400 hover:text-green-300 transition-colors">Syllabus</Link>
-              <Link href="/instructor" className="text-green-400 hover:text-green-300 transition-colors">Instructor</Link>
-              <Link href="/modules" className="text-green-400 hover:text-green-300 transition-colors">Start Learning</Link>
+              <Link href="/practice" className="text-green-400 hover:text-green-300 transition-colors">Practice Problems</Link>
+              <Link href="/friends" className="text-green-400 hover:text-green-300 transition-colors">Friends & Progress</Link>
             </div>
           </div>
         </footer>
