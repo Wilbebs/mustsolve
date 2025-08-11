@@ -2,9 +2,12 @@
 
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/lib/supabase';
 
 export default function LoginPage() {
   const [mode, setMode] = useState<'login' | 'signup' | 'forgot'>('login');
@@ -20,6 +23,17 @@ export default function LoginPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<{[key: string]: string}>({});
+  const [message, setMessage] = useState<{type: 'success' | 'error', text: string} | null>(null);
+
+  const { user, signUp, signIn, resetPassword } = useAuth();
+  const router = useRouter();
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (user) {
+      router.push('/practice');
+    }
+  }, [user, router]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -30,6 +44,10 @@ export default function LoginPage() {
     // Clear error when user starts typing
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
+    }
+    // Clear message when user starts typing
+    if (message) {
+      setMessage(null);
     }
   };
 
@@ -82,23 +100,76 @@ export default function LoginPage() {
     if (!validateForm()) return;
 
     setIsLoading(true);
+    setMessage(null);
     
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      if (mode === 'login') {
+        const { error } = await signIn(formData.email, formData.password);
+        if (error) {
+          setMessage({ type: 'error', text: error.message });
+        } else {
+          setMessage({ type: 'success', text: 'Successfully signed in!' });
+          // Redirect happens automatically via useEffect when user state changes
+        }
+      } else if (mode === 'signup') {
+        const { error } = await signUp(
+          formData.email, 
+          formData.password, 
+          formData.firstName, 
+          formData.lastName, 
+          formData.username
+        );
+        if (error) {
+          setMessage({ type: 'error', text: error.message });
+        } else {
+          setMessage({ 
+            type: 'success', 
+            text: 'Account created! Please check your email to verify your account.' 
+          });
+        }
+      } else if (mode === 'forgot') {
+        const { error } = await resetPassword(formData.email);
+        if (error) {
+          setMessage({ type: 'error', text: error.message });
+        } else {
+          setMessage({ 
+            type: 'success', 
+            text: 'Password reset email sent! Check your inbox.' 
+          });
+        }
+      }
+    } catch (error) {
+      setMessage({ 
+        type: 'error', 
+        text: 'An unexpected error occurred. Please try again.' 
+      });
+    } finally {
       setIsLoading(false);
-      console.log(`${mode} attempted with:`, formData);
-      // Here you would integrate with AWS Cognito
-    }, 2000);
+    }
   };
 
-  const handleGoogleLogin = () => {
-    console.log('Google OAuth login');
-    // Will integrate with AWS Cognito Google provider
+  const handleGoogleLogin = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/practice`
+      }
+    });
+    if (error) {
+      setMessage({ type: 'error', text: error.message });
+    }
   };
 
-  const handleGithubLogin = () => {
-    console.log('GitHub OAuth login');
-    // Will integrate with AWS Cognito GitHub provider
+  const handleGithubLogin = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'github',
+      options: {
+        redirectTo: `${window.location.origin}/practice`
+      }
+    });
+    if (error) {
+      setMessage({ type: 'error', text: error.message });
+    }
   };
 
   const formVariants = {
@@ -149,6 +220,21 @@ export default function LoginPage() {
               {mode === 'forgot' && 'Reset your password'}
             </p>
           </div>
+
+          {/* Success/Error Messages */}
+          {message && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className={`mb-6 p-4 rounded-xl border ${
+                message.type === 'success' 
+                  ? 'bg-green-500/20 border-green-500/30 text-green-300' 
+                  : 'bg-red-500/20 border-red-500/30 text-red-300'
+              }`}
+            >
+              {message.text}
+            </motion.div>
+          )}
 
           {/* Mode Toggle Buttons */}
           {mode !== 'forgot' && (
