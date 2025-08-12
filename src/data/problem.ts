@@ -7,7 +7,7 @@ export const problems = [
     title: 'Two Sum',
     difficulty: 'Easy',
     completed: false,
-    description: 'Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target.',
+    description: 'Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target.\n\nYou may assume that each input would have exactly one solution, and you may not use the same element twice.\n\nYou can return the answer in any order.',
     exampleInput: 'nums = [2,7,11,15], target = 9',
     exampleOutput: '[0,1]',
     starterCode: `class Solution {
@@ -39,7 +39,7 @@ public:
     title: 'Valid Anagram',
     difficulty: 'Easy',
     completed: false,
-    description: 'Given two strings s and t, return true if t is an anagram of s, and false otherwise.',
+    description: 'Given two strings s and t, return true if t is an anagram of s, and false otherwise.\n\nAn Anagram is a word or phrase formed by rearranging the letters of a different word or phrase, typically using all the original letters exactly once.',
     exampleInput: 's = "anagram", t = "nagaram"',
     exampleOutput: 'true',
     starterCode: `class Solution {
@@ -146,7 +146,7 @@ public:
 };`,
   },
 
-    {
+  {
     id: 10,
     slug: 'valid-palindrome',
     title: 'Valid Palindrome',

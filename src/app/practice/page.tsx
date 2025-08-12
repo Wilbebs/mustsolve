@@ -1,4 +1,4 @@
-// File: src/app/practice/page.tsx
+// File: src/app/practice/page.tsx - Just remove locks, change nothing else
 
 'use client';
 
@@ -26,14 +26,14 @@ const PracticePage = () => {
       color: 'from-green-400 to-emerald-500',
       problems: [
         { id: 1, name: 'Two Sum', slug: 'two-sum', difficulty: 'Easy', completed: true, status: 'available' },
-        { id: 2, name: 'Contains Duplicate', difficulty: 'Easy', completed: false, status: 'locked' },
-        { id: 3, name: 'Valid Anagram', difficulty: 'Easy', completed: false, status: 'locked' },
-        { id: 4, name: 'Group Anagrams', difficulty: 'Medium', completed: false, status: 'locked' },
-        { id: 5, name: 'Top K Frequent Elements', difficulty: 'Medium', completed: false, status: 'locked' },
-        { id: 6, name: 'Product of Array Except Self', difficulty: 'Medium', completed: false, status: 'locked' },
-        { id: 7, name: 'Valid Sudoku', difficulty: 'Medium', completed: false, status: 'locked' },
-        { id: 8, name: 'Longest Consecutive Sequence', difficulty: 'Medium', completed: false, status: 'locked' },
-        { id: 9, name: 'Trapping Rain Water', difficulty: 'Hard', completed: false, status: 'locked' },
+        { id: 2, name: 'Contains Duplicate', difficulty: 'Easy', completed: false, status: 'available' },
+        { id: 3, name: 'Valid Anagram', difficulty: 'Easy', completed: false, status: 'available' },
+        { id: 4, name: 'Group Anagrams', difficulty: 'Medium', completed: false, status: 'available' },
+        { id: 5, name: 'Top K Frequent Elements', difficulty: 'Medium', completed: false, status: 'available' },
+        { id: 6, name: 'Product of Array Except Self', difficulty: 'Medium', completed: false, status: 'available' },
+        { id: 7, name: 'Valid Sudoku', difficulty: 'Medium', completed: false, status: 'available' },
+        { id: 8, name: 'Longest Consecutive Sequence', difficulty: 'Medium', completed: false, status: 'available' },
+        { id: 9, name: 'Trapping Rain Water', difficulty: 'Hard', completed: false, status: 'available' },
       ]
     },
     {
@@ -43,11 +43,11 @@ const PracticePage = () => {
       completed: 0,
       color: 'from-blue-400 to-cyan-500',
       problems: [
-        { id: 10, name: 'Valid Palindrome', difficulty: 'Easy', completed: false, status: 'locked' },
-        { id: 11, name: 'Two Sum II - Input Array Is Sorted', difficulty: 'Medium', completed: false, status: 'locked' },
-        { id: 12, name: '3Sum', difficulty: 'Medium', completed: false, status: 'locked' },
-        { id: 13, name: 'Container With Most Water', difficulty: 'Medium', completed: false, status: 'locked' },
-        { id: 14, name: 'Trapping Rain Water', difficulty: 'Hard', completed: false, status: 'locked' },
+        { id: 10, name: 'Valid Palindrome', difficulty: 'Easy', completed: false, status: 'available' },
+        { id: 11, name: 'Two Sum II - Input Array Is Sorted', difficulty: 'Medium', completed: false, status: 'available' },
+        { id: 12, name: '3Sum', difficulty: 'Medium', completed: false, status: 'available' },
+        { id: 13, name: 'Container With Most Water', difficulty: 'Medium', completed: false, status: 'available' },
+        { id: 14, name: 'Trapping Rain Water', difficulty: 'Hard', completed: false, status: 'available' },
       ]
     },
     {
@@ -57,12 +57,12 @@ const PracticePage = () => {
       completed: 0,
       color: 'from-purple-400 to-pink-500',
       problems: [
-        { id: 15, name: 'Best Time to Buy and Sell Stock', difficulty: 'Easy', completed: false, status: 'locked' },
-        { id: 16, name: 'Longest Substring Without Repeating Characters', difficulty: 'Medium', completed: false, status: 'locked' },
-        { id: 17, name: 'Longest Repeating Character Replacement', difficulty: 'Medium', completed: false, status: 'locked' },
-        { id: 18, name: 'Permutation in String', difficulty: 'Medium', completed: false, status: 'locked' },
-        { id: 19, name: 'Minimum Window Substring', difficulty: 'Hard', completed: false, status: 'locked' },
-        { id: 20, name: 'Sliding Window Maximum', difficulty: 'Hard', completed: false, status: 'locked' },
+        { id: 15, name: 'Best Time to Buy and Sell Stock', difficulty: 'Easy', completed: false, status: 'available' },
+        { id: 16, name: 'Longest Substring Without Repeating Characters', difficulty: 'Medium', completed: false, status: 'available' },
+        { id: 17, name: 'Longest Repeating Character Replacement', difficulty: 'Medium', completed: false, status: 'available' },
+        { id: 18, name: 'Permutation in String', difficulty: 'Medium', completed: false, status: 'available' },
+        { id: 19, name: 'Minimum Window Substring', difficulty: 'Hard', completed: false, status: 'available' },
+        { id: 20, name: 'Sliding Window Maximum', difficulty: 'Hard', completed: false, status: 'available' },
       ]
     },
     {
@@ -72,13 +72,13 @@ const PracticePage = () => {
       completed: 0,
       color: 'from-orange-400 to-red-500',
       problems: [
-        { id: 21, name: 'Valid Parentheses', difficulty: 'Easy', completed: false, status: 'locked' },
-        { id: 22, name: 'Min Stack', difficulty: 'Medium', completed: false, status: 'locked' },
-        { id: 23, name: 'Evaluate Reverse Polish Notation', difficulty: 'Medium', completed: false, status: 'locked' },
-        { id: 24, name: 'Generate Parentheses', difficulty: 'Medium', completed: false, status: 'locked' },
-        { id: 25, name: 'Daily Temperatures', difficulty: 'Medium', completed: false, status: 'locked' },
-        { id: 26, name: 'Car Fleet', difficulty: 'Medium', completed: false, status: 'locked' },
-        { id: 27, name: 'Largest Rectangle in Histogram', difficulty: 'Hard', completed: false, status: 'locked' },
+        { id: 21, name: 'Valid Parentheses', difficulty: 'Easy', completed: false, status: 'available' },
+        { id: 22, name: 'Min Stack', difficulty: 'Medium', completed: false, status: 'available' },
+        { id: 23, name: 'Evaluate Reverse Polish Notation', difficulty: 'Medium', completed: false, status: 'available' },
+        { id: 24, name: 'Generate Parentheses', difficulty: 'Medium', completed: false, status: 'available' },
+        { id: 25, name: 'Daily Temperatures', difficulty: 'Medium', completed: false, status: 'available' },
+        { id: 26, name: 'Car Fleet', difficulty: 'Medium', completed: false, status: 'available' },
+        { id: 27, name: 'Largest Rectangle in Histogram', difficulty: 'Hard', completed: false, status: 'available' },
       ]
     },
     {
@@ -88,13 +88,13 @@ const PracticePage = () => {
       completed: 0,
       color: 'from-indigo-400 to-purple-500',
       problems: [
-        { id: 28, name: 'Binary Search', difficulty: 'Easy', completed: false, status: 'locked' },
-        { id: 29, name: 'Search a 2D Matrix', difficulty: 'Medium', completed: false, status: 'locked' },
-        { id: 30, name: 'Koko Eating Bananas', difficulty: 'Medium', completed: false, status: 'locked' },
-        { id: 31, name: 'Find Minimum in Rotated Sorted Array', difficulty: 'Medium', completed: false, status: 'locked' },
-        { id: 32, name: 'Search in Rotated Sorted Array', difficulty: 'Medium', completed: false, status: 'locked' },
-        { id: 33, name: 'Time Based Key-Value Store', difficulty: 'Medium', completed: false, status: 'locked' },
-        { id: 34, name: 'Median of Two Sorted Arrays', difficulty: 'Hard', completed: false, status: 'locked' },
+        { id: 28, name: 'Binary Search', difficulty: 'Easy', completed: false, status: 'available' },
+        { id: 29, name: 'Search a 2D Matrix', difficulty: 'Medium', completed: false, status: 'available' },
+        { id: 30, name: 'Koko Eating Bananas', difficulty: 'Medium', completed: false, status: 'available' },
+        { id: 31, name: 'Find Minimum in Rotated Sorted Array', difficulty: 'Medium', completed: false, status: 'available' },
+        { id: 32, name: 'Search in Rotated Sorted Array', difficulty: 'Medium', completed: false, status: 'available' },
+        { id: 33, name: 'Time Based Key-Value Store', difficulty: 'Medium', completed: false, status: 'available' },
+        { id: 34, name: 'Median of Two Sorted Arrays', difficulty: 'Hard', completed: false, status: 'available' },
       ]
     },
     {
@@ -104,17 +104,17 @@ const PracticePage = () => {
       completed: 0,
       color: 'from-teal-400 to-cyan-500',
       problems: [
-        { id: 35, name: 'Reverse Linked List', difficulty: 'Easy', completed: false, status: 'locked' },
-        { id: 36, name: 'Merge Two Sorted Lists', difficulty: 'Easy', completed: false, status: 'locked' },
-        { id: 37, name: 'Reorder List', difficulty: 'Medium', completed: false, status: 'locked' },
-        { id: 38, name: 'Remove Nth Node From End of List', difficulty: 'Medium', completed: false, status: 'locked' },
-        { id: 39, name: 'Copy List with Random Pointer', difficulty: 'Medium', completed: false, status: 'locked' },
-        { id: 40, name: 'Add Two Numbers', difficulty: 'Medium', completed: false, status: 'locked' },
-        { id: 41, name: 'Linked List Cycle', difficulty: 'Easy', completed: false, status: 'locked' },
-        { id: 42, name: 'Find the Duplicate Number', difficulty: 'Medium', completed: false, status: 'locked' },
-        { id: 43, name: 'LRU Cache', difficulty: 'Medium', completed: false, status: 'locked' },
-        { id: 44, name: 'Merge k Sorted Lists', difficulty: 'Hard', completed: false, status: 'locked' },
-        { id: 45, name: 'Reverse Nodes in k-Group', difficulty: 'Hard', completed: false, status: 'locked' },
+        { id: 35, name: 'Reverse Linked List', difficulty: 'Easy', completed: false, status: 'available' },
+        { id: 36, name: 'Merge Two Sorted Lists', difficulty: 'Easy', completed: false, status: 'available' },
+        { id: 37, name: 'Reorder List', difficulty: 'Medium', completed: false, status: 'available' },
+        { id: 38, name: 'Remove Nth Node From End of List', difficulty: 'Medium', completed: false, status: 'available' },
+        { id: 39, name: 'Copy List with Random Pointer', difficulty: 'Medium', completed: false, status: 'available' },
+        { id: 40, name: 'Add Two Numbers', difficulty: 'Medium', completed: false, status: 'available' },
+        { id: 41, name: 'Linked List Cycle', difficulty: 'Easy', completed: false, status: 'available' },
+        { id: 42, name: 'Find the Duplicate Number', difficulty: 'Medium', completed: false, status: 'available' },
+        { id: 43, name: 'LRU Cache', difficulty: 'Medium', completed: false, status: 'available' },
+        { id: 44, name: 'Merge k Sorted Lists', difficulty: 'Hard', completed: false, status: 'available' },
+        { id: 45, name: 'Reverse Nodes in k-Group', difficulty: 'Hard', completed: false, status: 'available' },
       ]
     },
     {
@@ -124,21 +124,21 @@ const PracticePage = () => {
       completed: 0,
       color: 'from-yellow-400 to-orange-500',
       problems: [
-        { id: 46, name: 'Invert Binary Tree', difficulty: 'Easy', completed: false, status: 'locked' },
-        { id: 47, name: 'Maximum Depth of Binary Tree', difficulty: 'Easy', completed: false, status: 'locked' },
-        { id: 48, name: 'Diameter of Binary Tree', difficulty: 'Easy', completed: false, status: 'locked' },
-        { id: 49, name: 'Balanced Binary Tree', difficulty: 'Easy', completed: false, status: 'locked' },
-        { id: 50, name: 'Same Tree', difficulty: 'Easy', completed: false, status: 'locked' },
-        { id: 51, name: 'Subtree of Another Tree', difficulty: 'Easy', completed: false, status: 'locked' },
-        { id: 52, name: 'Lowest Common Ancestor of a Binary Search Tree', difficulty: 'Medium', completed: false, status: 'locked' },
-        { id: 53, name: 'Binary Tree Level Order Traversal', difficulty: 'Medium', completed: false, status: 'locked' },
-        { id: 54, name: 'Binary Tree Right Side View', difficulty: 'Medium', completed: false, status: 'locked' },
-        { id: 55, name: 'Count Good Nodes in Binary Tree', difficulty: 'Medium', completed: false, status: 'locked' },
-        { id: 56, name: 'Validate Binary Search Tree', difficulty: 'Medium', completed: false, status: 'locked' },
-        { id: 57, name: 'Kth Smallest Element in a BST', difficulty: 'Medium', completed: false, status: 'locked' },
-        { id: 58, name: 'Construct Binary Tree from Preorder and Inorder Traversal', difficulty: 'Medium', completed: false, status: 'locked' },
-        { id: 59, name: 'Binary Tree Maximum Path Sum', difficulty: 'Hard', completed: false, status: 'locked' },
-        { id: 60, name: 'Serialize and Deserialize Binary Tree', difficulty: 'Hard', completed: false, status: 'locked' },
+        { id: 46, name: 'Invert Binary Tree', difficulty: 'Easy', completed: false, status: 'available' },
+        { id: 47, name: 'Maximum Depth of Binary Tree', difficulty: 'Easy', completed: false, status: 'available' },
+        { id: 48, name: 'Diameter of Binary Tree', difficulty: 'Easy', completed: false, status: 'available' },
+        { id: 49, name: 'Balanced Binary Tree', difficulty: 'Easy', completed: false, status: 'available' },
+        { id: 50, name: 'Same Tree', difficulty: 'Easy', completed: false, status: 'available' },
+        { id: 51, name: 'Subtree of Another Tree', difficulty: 'Easy', completed: false, status: 'available' },
+        { id: 52, name: 'Lowest Common Ancestor of a Binary Search Tree', difficulty: 'Medium', completed: false, status: 'available' },
+        { id: 53, name: 'Binary Tree Level Order Traversal', difficulty: 'Medium', completed: false, status: 'available' },
+        { id: 54, name: 'Binary Tree Right Side View', difficulty: 'Medium', completed: false, status: 'available' },
+        { id: 55, name: 'Count Good Nodes in Binary Tree', difficulty: 'Medium', completed: false, status: 'available' },
+        { id: 56, name: 'Validate Binary Search Tree', difficulty: 'Medium', completed: false, status: 'available' },
+        { id: 57, name: 'Kth Smallest Element in a BST', difficulty: 'Medium', completed: false, status: 'available' },
+        { id: 58, name: 'Construct Binary Tree from Preorder and Inorder Traversal', difficulty: 'Medium', completed: false, status: 'available' },
+        { id: 59, name: 'Binary Tree Maximum Path Sum', difficulty: 'Hard', completed: false, status: 'available' },
+        { id: 60, name: 'Serialize and Deserialize Binary Tree', difficulty: 'Hard', completed: false, status: 'available' },
       ]
     }
   ];
@@ -391,10 +391,8 @@ const PracticePage = () => {
                         .map((problem, problemIndex) => (
                         <motion.div
                           key={problem.id}
-                          className={`flex items-center justify-between p-4 hover:bg-gray-800/30 transition-colors border-b border-gray-800 last:border-b-0 ${
-                            problem.status === 'locked' ? 'opacity-60' : 'cursor-pointer'
-                          }`}
-                          whileHover={problem.status === 'available' ? { x: 10 } : {}}
+                          className="flex items-center justify-between p-4 hover:bg-gray-800/30 transition-colors border-b border-gray-800 last:border-b-0 cursor-pointer"
+                          whileHover={{ x: 10 }}
                           onHoverStart={() => setHoveredProblem(problem.id)}
                           onHoverEnd={() => setHoveredProblem(null)}
                         >
@@ -402,41 +400,29 @@ const PracticePage = () => {
                             <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${
                               problem.completed 
                                 ? `bg-gradient-to-r ${category.color} border-transparent` 
-                                : problem.status === 'available'
-                                ? 'border-green-400'
-                                : 'border-gray-600'
+                                : 'border-green-400'
                             }`}>
                               {problem.completed ? (
                                 <div className="text-black font-bold">✓</div>
-                              ) : problem.status === 'locked' ? (
-                                <div className="text-gray-500 text-sm">🔒</div>
                               ) : (
                                 <div className="w-3 h-3 rounded-full bg-green-400"></div>
                               )}
                             </div>
-                            {problem.status === 'available' ? (
-                              <Link href={`/problems/${getProblemSlug(problem.name)}`}>
-                                <span className="text-white font-medium hover:text-green-400 transition-colors">
-                                  {problem.name}
-                                </span>
-                              </Link>
-                            ) : (
-                              <span className="text-gray-400 font-medium">
+                            <Link href={`/problems/${getProblemSlug(problem.name)}`}>
+                              <span className="text-white font-medium hover:text-green-400 transition-colors">
                                 {problem.name}
                               </span>
-                            )}
+                            </Link>
                           </div>
                           <div className="flex items-center space-x-4">
                             <span className={`text-sm font-medium ${getDifficultyColor(problem.difficulty)}`}>
                               {problem.difficulty}
                             </span>
-                            {problem.status === 'available' && (
-                              <div className={`text-green-400 transition-transform ${
-                                hoveredProblem === problem.id ? 'translate-x-1' : ''
-                              }`}>
-                                →
-                              </div>
-                            )}
+                            <div className={`text-green-400 transition-transform ${
+                              hoveredProblem === problem.id ? 'translate-x-1' : ''
+                            }`}>
+                              →
+                            </div>
                           </div>
                         </motion.div>
                       ))}
