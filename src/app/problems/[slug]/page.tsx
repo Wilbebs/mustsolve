@@ -231,8 +231,12 @@ const formatInput = (testCase: TestCase, problemType: string): string => {
 };
 
 // Extracted JavaScript execution logic
-const executeJavaScript = (code: string, testCase: TestCase, problemType: string, resolve: Function) => {
-  try {
+    const executeJavaScript = (
+      code: string, 
+      testCase: TestCase, 
+      problemType: string, 
+      resolve: (value: { success: boolean; output: string; error?: string }) => void
+    ) => {  try {
     const consoleOutput: string[] = [];
     const originalConsoleLog = console.log;
     console.log = (...args) => {
@@ -307,8 +311,11 @@ const executeJavaScript = (code: string, testCase: TestCase, problemType: string
 };
 
 // Placeholder execution for other languages
-const executeOtherLanguage = (testCase: TestCase, problemType: string, resolve: Function) => {
-  setTimeout(() => {
+    const executeOtherLanguage = (
+      testCase: TestCase, 
+      problemType: string, 
+      resolve: (value: { success: boolean; output: string; error?: string }) => void
+    ) => {  setTimeout(() => {
     const output = formatInput(testCase, problemType);
     
     if (problemType === 'two-sum') {
