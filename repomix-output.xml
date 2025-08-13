@@ -1,0 +1,3836 @@
+This file is a merged representation of the entire codebase, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of the entire repository's contents.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+.gitignore
+eslint.config.mjs
+mustsolve-backend/package.json
+mustsolve-backend/server.js
+next.config.ts
+package.json
+postcss.config.mjs
+public/logo/crt-logo.svg
+public/logo/tools-and-utensils-programmer-svgrepo-com.svg
+src/app/friends/page.tsx
+src/app/globals.css
+src/app/layout.tsx
+src/app/login/page.tsx
+src/app/page.tsx
+src/app/practice/page.tsx
+src/app/problems/[slug]/page.tsx
+src/components/Navbar.tsx
+src/contexts/AuthContext.tsx
+src/data/problem.ts
+src/lib/supabase.ts
+tsconfig.json
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path=".gitignore">
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# env files (can opt-in for committing if needed)
+.env*
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+</file>
+
+<file path="eslint.config.mjs">
+import { dirname } from "path";
+import { fileURLToPath } from "url";
+import { FlatCompat } from "@eslint/eslintrc";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+const compat = new FlatCompat({
+  baseDirectory: __dirname,
+});
+
+const eslintConfig = [
+  ...compat.extends("next/core-web-vitals", "next/typescript"),
+  {
+    rules: {
+      "@typescript-eslint/no-unused-vars": "off",
+      "@typescript-eslint/no-explicit-any": "off",
+      "react/display-name": "off",
+      "react-hooks/exhaustive-deps": "off",
+      "react/no-unescaped-entities": "off",
+    },
+  },
+];
+
+export default eslintConfig;
+</file>
+
+<file path="mustsolve-backend/package.json">
+{
+  "name": "mustsolve-backend",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}
+</file>
+
+<file path="mustsolve-backend/server.js">
+// backend/server.js - Node.js + Express Backend for Java Execution
+
+const express = require('express');
+const fs = require('fs').promises;
+const path = require('path');
+const { exec } = require('child_process');
+const { promisify } = require('util');
+const crypto = require('crypto');
+const cors = require('cors');
+const os = require('os');
+
+const execAsync = promisify(exec);
+const app = express();
+const PORT = process.env.PORT || 3001;
+
+// Middleware
+app.use(cors());
+app.use(express.json({ limit: '10mb' }));
+
+// Security settings
+const EXECUTION_TIMEOUT = 5000; // 5 seconds
+const TEMP_DIR = path.join(os.tmpdir(), 'java_execution'); // Windows-compatible temp directory
+const MAX_OUTPUT_SIZE = 10000; // 10KB max output
+
+// Ensure temp directory exists
+async function ensureTempDir() {
+  try {
+    await fs.mkdir(TEMP_DIR, { recursive: true });
+  } catch (error) {
+    console.error('Failed to create temp directory:', error);
+  }
+}
+
+// Clean up old files (run periodically)
+async function cleanupOldFiles() {
+  try {
+    const files = await fs.readdir(TEMP_DIR);
+    const now = Date.now();
+    
+    for (const file of files) {
+      const filePath = path.join(TEMP_DIR, file);
+      const stats = await fs.stat(filePath);
+      
+      // Delete files older than 1 hour
+      if (now - stats.mtime.getTime() > 3600000) {
+        await fs.unlink(filePath);
+      }
+    }
+  } catch (error) {
+    console.error('Cleanup error:', error);
+  }
+}
+
+// Execute Java code safely
+async function executeJavaCode(code, testCases, problemType) {
+  const sessionId = crypto.randomUUID();
+  const className = 'Solution';
+  const javaFile = path.join(TEMP_DIR, `${sessionId}.java`);
+  const classFile = path.join(TEMP_DIR, `${sessionId}.class`);
+  
+  try {
+    // Write Java code to file
+    await fs.writeFile(javaFile, code);
+    
+    // Compile Java code
+    const compileCmd = `javac -cp "${TEMP_DIR}" "${javaFile}"`;
+    
+    try {
+      const { stderr: compileError } = await execAsync(compileCmd, {
+        timeout: EXECUTION_TIMEOUT,
+        cwd: TEMP_DIR
+      });
+      
+      if (compileError) {
+        return {
+          success: false,
+          error: `Compilation Error\n\n${compileError}`,
+          output: ''
+        };
+      }
+    } catch (compileErr) {
+      return {
+        success: false,
+        error: `Compilation Error\n\n${compileErr.message}`,
+        output: ''
+      };
+    }
+    
+    // Execute test cases
+    const results = [];
+    
+    for (const testCase of testCases) {
+      try {
+        const result = await executeTestCase(sessionId, testCase, problemType);
+        results.push(result);
+      } catch (execError) {
+        results.push({
+          success: false,
+          error: `Runtime Error\n\n${execError.message}`,
+          testCase
+        });
+      }
+    }
+    
+    return { results };
+    
+  } finally {
+    // Cleanup files
+    try {
+      await fs.unlink(javaFile).catch(() => {});
+      await fs.unlink(classFile).catch(() => {});
+    } catch (cleanupError) {
+      console.error('Cleanup error:', cleanupError);
+    }
+  }
+}
+
+// Execute individual test case
+// Execute individual test case
+async function executeTestCase(sessionId, testCase, problemType) {
+  let javaRunner;
+  
+if (problemType === 'two-sum') {
+  javaRunner = `
+class TestRunner {
+    public static void main(String[] args) {
+        Solution solution = new Solution();
+        int[] nums = {${testCase.nums.join(',')}};
+        int target = ${testCase.target};
+        
+        try {
+            int[] result = solution.twoSum(nums, target);
+            System.out.print("[");
+            for (int i = 0; i < result.length; i++) {
+                System.out.print(result[i]);
+                if (i < result.length - 1) System.out.print(",");
+            }
+            System.out.println("]");
+        } catch (Exception e) {
+            System.err.println("Runtime Error: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+}`;
+} else if (problemType === 'valid-anagram') {
+    javaRunner = `
+class TestRunner {
+    public static void main(String[] args) {
+        Solution solution = new Solution();
+        String s = "${testCase.s}";
+        String t = "${testCase.t}";
+        
+        try {
+            boolean result = solution.isAnagram(s, t);
+            System.out.println(result);
+        } catch (Exception e) {
+            System.err.println("Runtime Error: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+}`;
+  }
+  
+  const runnerFile = path.join(TEMP_DIR, `TestRunner.java`);
+  const runnerClass = path.join(TEMP_DIR, `TestRunner.class`);
+  
+  try {
+    // Write and compile test runner
+    await fs.writeFile(runnerFile, javaRunner);
+    
+    const compileCmd = `javac -cp "${TEMP_DIR}" "${runnerFile}"`;
+    await execAsync(compileCmd, { timeout: EXECUTION_TIMEOUT });
+    
+    // Execute test
+    const executeCmd = `java -cp "${TEMP_DIR}" TestRunner`;
+    const { stdout, stderr } = await execAsync(executeCmd, {
+      timeout: EXECUTION_TIMEOUT,
+      maxBuffer: MAX_OUTPUT_SIZE
+    });
+    
+    if (stderr) {
+      return {
+        success: false,
+        error: `Runtime Error\n\n${stderr}`,
+        testCase,
+        actualOutput: stdout.trim()
+      };
+    }
+    
+    const actualOutput = stdout.trim();
+    let success = false;
+    
+    // Compare results
+   if (problemType === 'two-sum') {
+    const expected = JSON.stringify(testCase.expected);
+    const actual = actualOutput.replace(/\s/g, ''); // Remove spaces
+    success = actual === expected.replace(/\s/g, '');
+    } else if (problemType === 'valid-anagram') {
+      const expected = testCase.expected.toString();
+      success = actualOutput === expected;
+    }
+    
+    return {
+      success,
+      testCase,
+      actualOutput,
+      expectedOutput: problemType === 'two-sum' ? 
+        JSON.stringify(testCase.expected) : 
+        testCase.expected.toString()
+    };
+    
+  } finally {
+    // Cleanup runner files
+    try {
+      await fs.unlink(runnerFile).catch(() => {});
+      await fs.unlink(runnerClass).catch(() => {});
+    } catch (error) {
+      console.error('Runner cleanup error:', error);
+    }
+  }
+}
+
+// API endpoint for code execution
+app.post('/api/execute-java', async (req, res) => {
+  try {
+    const { code, testCases, problemType } = req.body;
+    
+    // Validation
+    if (!code || !testCases || !problemType) {
+      return res.status(400).json({
+        error: 'Missing required fields: code, testCases, problemType'
+      });
+    }
+    
+    if (code.length > 50000) {
+      return res.status(400).json({
+        error: 'Code too long (max 50KB)'
+      });
+    }
+    
+    if (testCases.length > 10) {
+      return res.status(400).json({
+        error: 'Too many test cases (max 10)'
+      });
+    }
+    
+    console.log(`Executing ${problemType} with ${testCases.length} test cases`);
+    
+    const result = await executeJavaCode(code, testCases, problemType);
+    res.json(result);
+    
+  } catch (error) {
+    console.error('Execution error:', error);
+    res.status(500).json({
+      error: 'Internal server error during code execution'
+    });
+  }
+});
+
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    status: 'ok', 
+    timestamp: new Date().toISOString(),
+    javaVersion: process.env.JAVA_VERSION || 'detected automatically'
+  });
+});
+
+// Start server
+async function startServer() {
+  await ensureTempDir();
+  
+  // Cleanup old files every hour
+  setInterval(cleanupOldFiles, 3600000);
+  
+  app.listen(PORT, () => {
+    console.log(`🚀 Java execution server running on port ${PORT}`);
+    console.log(`📁 Temp directory: ${TEMP_DIR}`);
+    console.log(`⏱️  Execution timeout: ${EXECUTION_TIMEOUT}ms`);
+  });
+}
+
+startServer().catch(console.error);
+</file>
+
+<file path="next.config.ts">
+import type { NextConfig } from "next";
+
+const nextConfig: NextConfig = {
+  /* config options here */
+};
+
+export default nextConfig;
+</file>
+
+<file path="package.json">
+{
+  "name": "mustsolve",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@aws-amplify/ui-react": "^6.11.2",
+    "@supabase/supabase-js": "^2.54.0",
+    "aws-amplify": "^6.15.5",
+    "framer-motion": "^12.18.1",
+    "lucide-react": "^0.525.0",
+    "next": "15.3.3",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3",
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "15.3.3",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}
+</file>
+
+<file path="postcss.config.mjs">
+const config = {
+  plugins: ["@tailwindcss/postcss"],
+};
+
+export default config;
+</file>
+
+<file path="public/logo/crt-logo.svg">
+<?xml version="1.0" encoding="utf-8"?><!-- Uploaded to: SVG Repo, www.svgrepo.com, Generator: SVG Repo Mixer Tools -->
+<svg width="800px" height="800px" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+<rect width="48" height="48" fill="white" fill-opacity="0.01"/>
+<rect x="4" y="8" width="40" height="32" rx="2" fill="#2F88FF" stroke="#000000" stroke-width="4" stroke-linejoin="round"/>
+<path d="M12 18L19 24L12 30" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M23 32H36" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
+</file>
+
+<file path="public/logo/tools-and-utensils-programmer-svgrepo-com.svg">
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!-- Uploaded to: SVG Repo, www.svgrepo.com, Generator: SVG Repo Mixer Tools -->
+<svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" 
+	 viewBox="0 0 512 512" xml:space="preserve">
+<rect x="187.317" y="387.122" style="fill:#78B9EB;" width="137.366" height="74.927"/>
+<rect y="31.22" style="fill:#0052B4;" width="512" height="374.634"/>
+<rect x="256" y="31.22" style="fill:#003778;" width="256" height="374.634"/>
+<rect x="143.61" y="443.317" style="fill:#AED5F3;" width="224.78" height="37.463"/>
+<rect x="256" y="443.317" style="fill:#93C7EF;" width="112.39" height="37.463"/>
+<g>
+	<polygon style="fill:#FFFFFF;" points="337.927,149.097 311.438,175.586 354.388,218.537 311.438,261.487 337.927,287.976 
+		407.368,218.537 	"/>
+	<polygon style="fill:#FFFFFF;" points="157.612,218.537 200.562,175.586 174.073,149.097 104.632,218.537 174.073,287.976 
+		200.562,261.487 	"/>
+	<polygon style="fill:#FFFFFF;" points="297.489,112.39 259.203,112.39 214.509,324.683 252.797,324.683 	"/>
+</g>
+</svg>
+</file>
+
+<file path="src/app/friends/page.tsx">
+// File: src/app/friends/page.tsx
+
+'use client';
+
+import React, { useState } from 'react';
+import { motion } from 'framer-motion';
+
+export default function FriendsPage() {
+  const [activeTab, setActiveTab] = useState('progress');
+
+  // Mock data for user and friends
+  const userData = {
+    name: "You",
+    username: "current_user",
+    totalSolved: 45,
+    avatar: "🧑‍💻",
+    level: "Intermediate",
+    streak: 12
+  };
+
+  const friendsData = [
+    {
+      name: "Sarah Chen",
+      username: "sarah_codes",
+      totalSolved: 67,
+      avatar: "👩‍💻",
+      level: "Advanced",
+      streak: 8,
+      isOnline: true
+    },
+    {
+      name: "Mike Johnson",
+      username: "mike_j",
+      totalSolved: 34,
+      avatar: "👨‍💻",
+      level: "Beginner",
+      streak: 5,
+      isOnline: false
+    },
+    {
+      name: "Alex Kim",
+      username: "alex_dev",
+      totalSolved: 89,
+      avatar: "🧑‍💻",
+      level: "Expert",
+      streak: 25,
+      isOnline: true
+    },
+    {
+      name: "Emma Rodriguez",
+      username: "emma_r",
+      totalSolved: 52,
+      avatar: "👩‍💻",
+      level: "Intermediate",
+      streak: 3,
+      isOnline: true
+    }
+  ];
+
+  const topicProgress = [
+    {
+      topic: "Arrays & Hashing",
+      yourProgress: { solved: 8, total: 9, percentage: 89 },
+      friends: [
+        { name: "Sarah", solved: 9, total: 9, percentage: 100 },
+        { name: "Alex", solved: 9, total: 9, percentage: 100 },
+        { name: "Emma", solved: 7, total: 9, percentage: 78 },
+        { name: "Mike", solved: 6, total: 9, percentage: 67 }
+      ]
+    },
+    {
+      topic: "Two Pointers", 
+      yourProgress: { solved: 3, total: 5, percentage: 60 },
+      friends: [
+        { name: "Alex", solved: 5, total: 5, percentage: 100 },
+        { name: "Sarah", solved: 4, total: 5, percentage: 80 },
+        { name: "Emma", solved: 3, total: 5, percentage: 60 },
+        { name: "Mike", solved: 2, total: 5, percentage: 40 }
+      ]
+    },
+    {
+      topic: "Sliding Window",
+      yourProgress: { solved: 2, total: 6, percentage: 33 },
+      friends: [
+        { name: "Alex", solved: 6, total: 6, percentage: 100 },
+        { name: "Sarah", solved: 5, total: 6, percentage: 83 },
+        { name: "Emma", solved: 4, total: 6, percentage: 67 },
+        { name: "Mike", solved: 1, total: 6, percentage: 17 }
+      ]
+    },
+    {
+      topic: "Stack",
+      yourProgress: { solved: 4, total: 7, percentage: 57 },
+      friends: [
+        { name: "Alex", solved: 7, total: 7, percentage: 100 },
+        { name: "Sarah", solved: 6, total: 7, percentage: 86 },
+        { name: "Mike", solved: 3, total: 7, percentage: 43 },
+        { name: "Emma", solved: 3, total: 7, percentage: 43 }
+      ]
+    },
+    {
+      topic: "Binary Search",
+      yourProgress: { solved: 3, total: 7, percentage: 43 },
+      friends: [
+        { name: "Alex", solved: 7, total: 7, percentage: 100 },
+        { name: "Sarah", solved: 5, total: 7, percentage: 71 },
+        { name: "Emma", solved: 4, total: 7, percentage: 57 },
+        { name: "Mike", solved: 2, total: 7, percentage: 29 }
+      ]
+    },
+    {
+      topic: "Linked List",
+      yourProgress: { solved: 6, total: 11, percentage: 55 },
+      friends: [
+        { name: "Alex", solved: 11, total: 11, percentage: 100 },
+        { name: "Sarah", solved: 9, total: 11, percentage: 82 },
+        { name: "Emma", solved: 7, total: 11, percentage: 64 },
+        { name: "Mike", solved: 4, total: 11, percentage: 36 }
+      ]
+    },
+    {
+      topic: "Trees",
+      yourProgress: { solved: 5, total: 15, percentage: 33 },
+      friends: [
+        { name: "Alex", solved: 15, total: 15, percentage: 100 },
+        { name: "Sarah", solved: 12, total: 15, percentage: 80 },
+        { name: "Emma", solved: 8, total: 15, percentage: 53 },
+        { name: "Mike", solved: 3, total: 15, percentage: 20 }
+      ]
+    }
+  ];
+
+  const getLevelColor = (level: string) => {
+    switch (level) {
+      case 'Beginner': return 'text-green-400';
+      case 'Intermediate': return 'text-yellow-400';
+      case 'Advanced': return 'text-orange-400';
+      case 'Expert': return 'text-red-400';
+      default: return 'text-gray-400';
+    }
+  };
+
+  const getProgressColor = (percentage: number) => {
+    if (percentage >= 80) return 'bg-green-500';
+    if (percentage >= 60) return 'bg-yellow-500';
+    if (percentage >= 40) return 'bg-orange-500';
+    return 'bg-red-500';
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-800 to-black relative overflow-hidden">
+      {/* Background elements */}
+      <div className="absolute inset-0">
+        <div className="absolute top-10 left-10 w-32 h-32 border border-green-400/30 rotate-45 animate-spin-slow"></div>
+        <div className="absolute top-1/3 right-20 w-24 h-24 border-2 border-green-500/40 rounded-full animate-pulse"></div>
+        <div className="absolute bottom-20 left-1/4 w-40 h-40 border border-green-300/20 rotate-12 animate-bounce-slow"></div>
+        
+        <div className="absolute inset-0 opacity-5">
+          <div className="w-full h-full" style={{
+            backgroundImage: `
+              linear-gradient(rgba(34, 197, 94, 0.1) 1px, transparent 1px),
+              linear-gradient(90deg, rgba(34, 197, 94, 0.1) 1px, transparent 1px)
+            `,
+            backgroundSize: '50px 50px'
+          }}></div>
+        </div>
+      </div>
+
+      <div className="relative z-10 w-full px-8 py-8">
+        {/* Header */}
+        <motion.div 
+          className="text-center mb-12"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+        >
+          <h1 className="text-6xl font-black bg-gradient-to-r from-green-400 via-blue-400 to-purple-400 bg-clip-text text-transparent mb-4">
+            Friends & Progress
+          </h1>
+          <p className="text-xl text-gray-300 max-w-3xl mx-auto">
+            Track your progress and compete with friends across different data structure topics
+          </p>
+        </motion.div>
+
+        {/* Tab Navigation */}
+        <motion.div 
+          className="max-w-6xl mx-auto mb-8"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2, duration: 0.6 }}
+        >
+          <div className="flex justify-center">
+            <div className="flex gap-4 p-2 bg-black/40 backdrop-blur-sm rounded-2xl border border-gray-600">
+              {['progress', 'friends'].map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={`px-8 py-3 rounded-xl font-semibold transition-all duration-300 ${
+                    activeTab === tab
+                      ? 'bg-gradient-to-r from-green-400 to-blue-500 text-black'
+                      : 'text-gray-300 hover:text-white hover:bg-gray-700/50'
+                  }`}
+                >
+                  {tab === 'progress' ? '📊 Topic Progress' : '👥 Friends List'}
+                </button>
+              ))}
+            </div>
+          </div>
+        </motion.div>
+
+        {activeTab === 'progress' && (
+          <motion.div 
+            className="max-w-6xl mx-auto space-y-6"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4, duration: 0.6 }}
+          >
+            {topicProgress.map((topic, index) => (
+              <div key={index} className="bg-black/60 backdrop-blur-sm rounded-2xl p-6 border border-gray-700">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-2xl font-bold text-white">{topic.topic}</h3>
+                  <div className="text-sm text-gray-400">
+                    {topic.yourProgress.solved}/{topic.yourProgress.total} solved
+                  </div>
+                </div>
+
+                {/* Your Progress */}
+                <div className="mb-6 p-4 bg-gradient-to-r from-green-500/20 to-blue-500/20 rounded-xl border border-green-400/30">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl">{userData.avatar}</span>
+                      <span className="text-white font-semibold">Your Progress</span>
+                    </div>
+                    <span className="text-green-400 font-bold">{topic.yourProgress.percentage}%</span>
+                  </div>
+                  <div className="w-full bg-gray-700 rounded-full h-3">
+                    <div 
+                      className={`h-3 rounded-full ${getProgressColor(topic.yourProgress.percentage)} transition-all duration-500`}
+                      style={{ width: `${topic.yourProgress.percentage}%` }}
+                    ></div>
+                  </div>
+                </div>
+
+                {/* Friends Progress */}
+                <div className="space-y-3">
+                  <h4 className="text-lg font-semibold text-gray-300 mb-3">Friends Progress</h4>
+                  {topic.friends.map((friend, friendIndex) => (
+                    <div key={friendIndex} className="flex items-center justify-between p-3 bg-gray-800/50 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <span className="text-lg">👤</span>
+                        <span className="text-white">{friend.name}</span>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <div className="w-32 bg-gray-700 rounded-full h-2">
+                          <div 
+                            className={`h-2 rounded-full ${getProgressColor(friend.percentage)} transition-all duration-500`}
+                            style={{ width: `${friend.percentage}%` }}
+                          ></div>
+                        </div>
+                        <span className="text-gray-300 text-sm w-12 text-right">{friend.percentage}%</span>
+                        <span className="text-gray-400 text-sm w-16 text-right">
+                          {friend.solved}/{topic.yourProgress.total}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </motion.div>
+        )}
+
+        {activeTab === 'friends' && (
+          <motion.div 
+            className="max-w-6xl mx-auto"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4, duration: 0.6 }}
+          >
+            {/* Your Profile Card */}
+            <div className="bg-gradient-to-r from-green-500/20 to-blue-500/20 backdrop-blur-sm rounded-2xl p-6 border border-green-400/30 mb-8">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-6">
+                  <div className="text-6xl">{userData.avatar}</div>
+                  <div>
+                    <h3 className="text-2xl font-bold text-white">{userData.name}</h3>
+                    <p className="text-gray-300">@{userData.username}</p>
+                    <div className="flex items-center gap-4 mt-2">
+                      <span className={`font-semibold ${getLevelColor(userData.level)}`}>
+                        {userData.level}
+                      </span>
+                      <span className="text-gray-400">•</span>
+                      <span className="text-orange-400">🔥 {userData.streak} day streak</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="text-center">
+                  <div className="text-4xl font-black text-transparent bg-gradient-to-r from-green-400 to-blue-400 bg-clip-text">
+                    {userData.totalSolved}
+                  </div>
+                  <div className="text-gray-300">Problems Solved</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Friends List */}
+            <div className="grid md:grid-cols-2 gap-6">
+              {friendsData.map((friend, index) => (
+                <motion.div
+                  key={index}
+                  className="bg-black/60 backdrop-blur-sm rounded-2xl p-6 border border-gray-700"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1 * index, duration: 0.5 }}
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-4">
+                      <div className="relative">
+                        <div className="text-4xl">{friend.avatar}</div>
+                        {friend.isOnline && (
+                          <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-gray-900"></div>
+                        )}
+                      </div>
+                      <div>
+                        <h4 className="text-xl font-bold text-white">{friend.name}</h4>
+                        <p className="text-gray-400">@{friend.username}</p>
+                      </div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-white">{friend.totalSolved}</div>
+                      <div className="text-gray-400 text-sm">solved</div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <span className={`font-semibold ${getLevelColor(friend.level)}`}>
+                        {friend.level}
+                      </span>
+                      <span className="text-gray-400">•</span>
+                      <span className="text-orange-400">🔥 {friend.streak} days</span>
+                    </div>
+                    <div className="flex gap-2">
+                      <button className="px-4 py-2 bg-green-500/20 text-green-400 rounded-lg hover:bg-green-500/30 transition-colors">
+                        Challenge
+                      </button>
+                      <button className="px-4 py-2 bg-blue-500/20 text-blue-400 rounded-lg hover:bg-blue-500/30 transition-colors">
+                        Message
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+
+            {/* Add Friends Section */}
+            <motion.div 
+              className="mt-8 bg-black/60 backdrop-blur-sm rounded-2xl p-6 border border-gray-700 text-center"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6, duration: 0.6 }}
+            >
+              <div className="text-4xl mb-4">👋</div>
+              <h3 className="text-xl font-bold text-white mb-2">Invite Friends</h3>
+              <p className="text-gray-300 mb-4">Challenge your friends and track progress together!</p>
+              <button className="px-6 py-3 bg-gradient-to-r from-green-400 to-blue-500 text-black font-bold rounded-xl hover:from-green-500 hover:to-blue-600 transition-all duration-300">
+                Add Friends
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </div>
+    </div>
+  );
+}
+</file>
+
+<file path="src/app/globals.css">
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+/* Custom animations for Course Overview */
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes spin-reverse {
+  from { transform: rotate(360deg); }
+  to { transform: rotate(0deg); }
+}
+
+@keyframes bounce-slow {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-20px) rotate(180deg); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px) rotate(45deg); }
+  50% { transform: translateY(-15px) rotate(45deg); }
+}
+
+@keyframes float-reverse {
+  0%, 100% { transform: translateY(-15px) rotate(45deg); }
+  50% { transform: translateY(0px) rotate(45deg); }
+}
+
+.animate-spin-slow {
+  animation: spin-slow 20s linear infinite;
+}
+
+.animate-spin-reverse {
+  animation: spin-reverse 15s linear infinite;
+}
+
+.animate-bounce-slow {
+  animation: bounce-slow 4s ease-in-out infinite;
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-float-reverse {
+  animation: float-reverse 8s ease-in-out infinite;
+}
+
+.hexagon {
+  clip-path: polygon(30% 0%, 70% 0%, 100% 50%, 70% 100%, 30% 100%, 0% 50%);
+}
+
+.bg-gradient-radial {
+  background: radial-gradient(circle, var(--tw-gradient-stops));
+}
+</file>
+
+<file path="src/app/layout.tsx">
+// File: src/app/layout.tsx
+
+import "./globals.css";
+import { AuthProvider } from "@/contexts/AuthContext";
+import Navbar from "@/components/Navbar";
+
+export const metadata = {
+  title: "MustSolve - LeetCode Practice Platform",
+  description: "Practice Data Structures and Algorithms",
+};
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <html lang="en">
+      <body className="bg-white text-gray-900 font-sans select-none">
+        <AuthProvider>
+          <Navbar />
+          <main className="bg-white">{children}</main>
+        </AuthProvider>
+      </body>
+    </html>
+  );
+}
+</file>
+
+<file path="src/app/login/page.tsx">
+// File: src/app/login/page.tsx
+
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/lib/supabase';
+
+export default function LoginPage() {
+  const [mode, setMode] = useState<'login' | 'signup' | 'forgot'>('login');
+  const [formData, setFormData] = useState({
+    email: '',
+    password: '',
+    confirmPassword: '',
+    firstName: '',
+    lastName: '',
+    username: ''
+  });
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState<{[key: string]: string}>({});
+  const [message, setMessage] = useState<{type: 'success' | 'error', text: string} | null>(null);
+
+  const { user, signUp, signIn, resetPassword } = useAuth();
+  const router = useRouter();
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (user) {
+      router.push('/practice');
+    }
+  }, [user, router]);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+    // Clear error when user starts typing
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: '' }));
+    }
+    // Clear message when user starts typing
+    if (message) {
+      setMessage(null);
+    }
+  };
+
+  const validateForm = () => {
+    const newErrors: {[key: string]: string} = {};
+
+    // Email validation
+    if (!formData.email) {
+      newErrors.email = 'Email is required';
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = 'Please enter a valid email';
+    }
+
+    if (mode !== 'forgot') {
+      // Password validation
+      if (!formData.password) {
+        newErrors.password = 'Password is required';
+      } else if (formData.password.length < 8) {
+        newErrors.password = 'Password must be at least 8 characters';
+      }
+
+      // Signup specific validations
+      if (mode === 'signup') {
+        if (!formData.firstName) {
+          newErrors.firstName = 'First name is required';
+        }
+        if (!formData.lastName) {
+          newErrors.lastName = 'Last name is required';
+        }
+        if (!formData.username) {
+          newErrors.username = 'Username is required';
+        } else if (formData.username.length < 3) {
+          newErrors.username = 'Username must be at least 3 characters';
+        }
+        if (!formData.confirmPassword) {
+          newErrors.confirmPassword = 'Please confirm your password';
+        } else if (formData.password !== formData.confirmPassword) {
+          newErrors.confirmPassword = 'Passwords do not match';
+        }
+      }
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!validateForm()) return;
+
+    setIsLoading(true);
+    setMessage(null);
+    
+    try {
+      if (mode === 'login') {
+        const { error } = await signIn(formData.email, formData.password);
+        if (error) {
+          setMessage({ type: 'error', text: error.message });
+        } else {
+          setMessage({ type: 'success', text: 'Successfully signed in!' });
+          // Redirect happens automatically via useEffect when user state changes
+        }
+      } else if (mode === 'signup') {
+        const { error } = await signUp(
+          formData.email, 
+          formData.password, 
+          formData.firstName, 
+          formData.lastName, 
+          formData.username
+        );
+        if (error) {
+          setMessage({ type: 'error', text: error.message });
+        } else {
+          setMessage({ 
+            type: 'success', 
+            text: 'Account created! Please check your email to verify your account.' 
+          });
+        }
+      } else if (mode === 'forgot') {
+        const { error } = await resetPassword(formData.email);
+        if (error) {
+          setMessage({ type: 'error', text: error.message });
+        } else {
+          setMessage({ 
+            type: 'success', 
+            text: 'Password reset email sent! Check your inbox.' 
+          });
+        }
+      }
+    } catch (error) {
+      setMessage({ 
+        type: 'error', 
+        text: 'An unexpected error occurred. Please try again.' 
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/practice`
+      }
+    });
+    if (error) {
+      setMessage({ type: 'error', text: error.message });
+    }
+  };
+
+  const handleGithubLogin = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'github',
+      options: {
+        redirectTo: `${window.location.origin}/practice`
+      }
+    });
+    if (error) {
+      setMessage({ type: 'error', text: error.message });
+    }
+  };
+
+  const formVariants = {
+    hidden: { opacity: 0, x: 50 },
+    visible: { opacity: 1, x: 0 },
+    exit: { opacity: 0, x: -50 }
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-800 to-black relative overflow-hidden">
+      {/* Background elements */}
+      <div className="absolute inset-0">
+        <div className="absolute top-10 left-10 w-32 h-32 border border-green-400/30 rotate-45 animate-spin-slow"></div>
+        <div className="absolute top-1/3 right-20 w-24 h-24 border-2 border-green-500/40 rounded-full animate-pulse"></div>
+        <div className="absolute bottom-20 left-1/4 w-40 h-40 border border-green-300/20 rotate-12 animate-bounce-slow"></div>
+        
+        <div className="absolute inset-0 opacity-5">
+          <div className="w-full h-full" style={{
+            backgroundImage: `
+              linear-gradient(rgba(34, 197, 94, 0.1) 1px, transparent 1px),
+              linear-gradient(90deg, rgba(34, 197, 94, 0.1) 1px, transparent 1px)
+            `,
+            backgroundSize: '50px 50px'
+          }}></div>
+        </div>
+        
+        <div className="absolute top-1/6 left-1/3 w-64 h-64 bg-gradient-radial from-green-400/20 via-green-500/10 to-transparent rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute top-2/3 right-1/4 w-96 h-96 bg-gradient-radial from-emerald-400/15 via-green-600/8 to-transparent rounded-full blur-3xl animate-pulse delay-1000"></div>
+      </div>
+
+      <div className="relative z-10 min-h-screen flex items-center justify-center px-8 py-8">
+        <motion.div 
+          className="w-full max-w-md"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+        >
+          {/* Logo/Header */}
+          <div className="text-center mb-8">
+            <Link href="/" className="inline-block">
+              <h1 className="text-4xl font-black bg-gradient-to-r from-green-400 to-blue-400 bg-clip-text text-transparent mb-2">
+                MustSolve
+              </h1>
+            </Link>
+            <p className="text-gray-300">
+              {mode === 'login' && 'Welcome back! Sign in to your account'}
+              {mode === 'signup' && 'Create your account to start solving'}
+              {mode === 'forgot' && 'Reset your password'}
+            </p>
+          </div>
+
+          {/* Success/Error Messages */}
+          {message && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className={`mb-6 p-4 rounded-xl border ${
+                message.type === 'success' 
+                  ? 'bg-green-500/20 border-green-500/30 text-green-300' 
+                  : 'bg-red-500/20 border-red-500/30 text-red-300'
+              }`}
+            >
+              {message.text}
+            </motion.div>
+          )}
+
+          {/* Mode Toggle Buttons */}
+          {mode !== 'forgot' && (
+            <div className="flex gap-2 p-1 bg-black/40 backdrop-blur-sm rounded-2xl border border-gray-600 mb-8">
+              <button
+                onClick={() => setMode('login')}
+                className={`flex-1 py-3 rounded-xl font-semibold transition-all duration-300 ${
+                  mode === 'login'
+                    ? 'bg-gradient-to-r from-green-400 to-blue-500 text-black'
+                    : 'text-gray-300 hover:text-white'
+                }`}
+              >
+                Sign In
+              </button>
+              <button
+                onClick={() => setMode('signup')}
+                className={`flex-1 py-3 rounded-xl font-semibold transition-all duration-300 ${
+                  mode === 'signup'
+                    ? 'bg-gradient-to-r from-green-400 to-blue-500 text-black'
+                    : 'text-gray-300 hover:text-white'
+                }`}
+              >
+                Sign Up
+              </button>
+            </div>
+          )}
+
+          {/* Main Form */}
+          <div className="bg-black/60 backdrop-blur-sm rounded-2xl p-8 border border-gray-700">
+            <AnimatePresence mode="wait">
+              <motion.form
+                key={mode}
+                variants={formVariants}
+                initial="hidden"
+                animate="visible"
+                exit="exit"
+                transition={{ duration: 0.3 }}
+                onSubmit={handleSubmit}
+                className="space-y-6"
+              >
+                {/* Signup Fields */}
+                {mode === 'signup' && (
+                  <>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">
+                          First Name
+                        </label>
+                        <input
+                          type="text"
+                          name="firstName"
+                          value={formData.firstName}
+                          onChange={handleInputChange}
+                          className={`w-full px-4 py-3 bg-gray-800/50 border rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 transition-all ${
+                            errors.firstName ? 'border-red-500 focus:ring-red-500' : 'border-gray-600 focus:ring-green-500'
+                          }`}
+                          placeholder="John"
+                        />
+                        {errors.firstName && (
+                          <p className="text-red-400 text-sm mt-1">{errors.firstName}</p>
+                        )}
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">
+                          Last Name
+                        </label>
+                        <input
+                          type="text"
+                          name="lastName"
+                          value={formData.lastName}
+                          onChange={handleInputChange}
+                          className={`w-full px-4 py-3 bg-gray-800/50 border rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 transition-all ${
+                            errors.lastName ? 'border-red-500 focus:ring-red-500' : 'border-gray-600 focus:ring-green-500'
+                          }`}
+                          placeholder="Doe"
+                        />
+                        {errors.lastName && (
+                          <p className="text-red-400 text-sm mt-1">{errors.lastName}</p>
+                        )}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Username
+                      </label>
+                      <input
+                        type="text"
+                        name="username"
+                        value={formData.username}
+                        onChange={handleInputChange}
+                        className={`w-full px-4 py-3 bg-gray-800/50 border rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 transition-all ${
+                          errors.username ? 'border-red-500 focus:ring-red-500' : 'border-gray-600 focus:ring-green-500'
+                        }`}
+                        placeholder="johndoe123"
+                      />
+                      {errors.username && (
+                        <p className="text-red-400 text-sm mt-1">{errors.username}</p>
+                      )}
+                    </div>
+                  </>
+                )}
+
+                {/* Email Field */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Email Address
+                  </label>
+                  <input
+                    type="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleInputChange}
+                    className={`w-full px-4 py-3 bg-gray-800/50 border rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 transition-all ${
+                      errors.email ? 'border-red-500 focus:ring-red-500' : 'border-gray-600 focus:ring-green-500'
+                    }`}
+                    placeholder="john@example.com"
+                  />
+                  {errors.email && (
+                    <p className="text-red-400 text-sm mt-1">{errors.email}</p>
+                  )}
+                </div>
+
+                {/* Password Fields */}
+                {mode !== 'forgot' && (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Password
+                      </label>
+                      <div className="relative">
+                        <input
+                          type={showPassword ? 'text' : 'password'}
+                          name="password"
+                          value={formData.password}
+                          onChange={handleInputChange}
+                          className={`w-full px-4 py-3 pr-12 bg-gray-800/50 border rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 transition-all ${
+                            errors.password ? 'border-red-500 focus:ring-red-500' : 'border-gray-600 focus:ring-green-500'
+                          }`}
+                          placeholder="••••••••"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
+                        >
+                          {showPassword ? '🙈' : '👁️'}
+                        </button>
+                      </div>
+                      {errors.password && (
+                        <p className="text-red-400 text-sm mt-1">{errors.password}</p>
+                      )}
+                    </div>
+
+                    {mode === 'signup' && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">
+                          Confirm Password
+                        </label>
+                        <div className="relative">
+                          <input
+                            type={showConfirmPassword ? 'text' : 'password'}
+                            name="confirmPassword"
+                            value={formData.confirmPassword}
+                            onChange={handleInputChange}
+                            className={`w-full px-4 py-3 pr-12 bg-gray-800/50 border rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 transition-all ${
+                              errors.confirmPassword ? 'border-red-500 focus:ring-red-500' : 'border-gray-600 focus:ring-green-500'
+                            }`}
+                            placeholder="••••••••"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
+                          >
+                            {showConfirmPassword ? '🙈' : '👁️'}
+                          </button>
+                        </div>
+                        {errors.confirmPassword && (
+                          <p className="text-red-400 text-sm mt-1">{errors.confirmPassword}</p>
+                        )}
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {/* Forgot Password Link */}
+                {mode === 'login' && (
+                  <div className="text-right">
+                    <button
+                      type="button"
+                      onClick={() => setMode('forgot')}
+                      className="text-green-400 hover:text-green-300 transition-colors text-sm"
+                    >
+                      Forgot your password?
+                    </button>
+                  </div>
+                )}
+
+                {/* Submit Button */}
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full py-3 bg-gradient-to-r from-green-400 to-blue-500 text-black font-bold rounded-xl hover:from-green-500 hover:to-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 flex items-center justify-center gap-2"
+                >
+                  {isLoading ? (
+                    <>
+                      <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin"></div>
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      {mode === 'login' && 'Sign In'}
+                      {mode === 'signup' && 'Create Account'}
+                      {mode === 'forgot' && 'Send Reset Link'}
+                    </>
+                  )}
+                </button>
+
+                {/* Back to Login from Forgot Password */}
+                {mode === 'forgot' && (
+                  <button
+                    type="button"
+                    onClick={() => setMode('login')}
+                    className="w-full py-3 text-gray-400 hover:text-white transition-colors"
+                  >
+                    ← Back to Sign In
+                  </button>
+                )}
+              </motion.form>
+            </AnimatePresence>
+
+            {/* OAuth Options */}
+            {mode !== 'forgot' && (
+              <>
+                <div className="my-6 flex items-center">
+                  <div className="flex-1 border-t border-gray-600"></div>
+                  <span className="px-4 text-gray-400 text-sm">or continue with</span>
+                  <div className="flex-1 border-t border-gray-600"></div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <button
+                    onClick={handleGoogleLogin}
+                    className="flex items-center justify-center gap-3 py-3 bg-gray-800/50 border border-gray-600 rounded-xl text-white hover:bg-gray-700/50 transition-all duration-300"
+                  >
+                    <svg className="w-5 h-5" viewBox="0 0 24 24">
+                      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                      <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                    </svg>
+                    Google
+                  </button>
+                  
+                  <button
+                    onClick={handleGithubLogin}
+                    className="flex items-center justify-center gap-3 py-3 bg-gray-800/50 border border-gray-600 rounded-xl text-white hover:bg-gray-700/50 transition-all duration-300"
+                  >
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                    </svg>
+                    GitHub
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Footer */}
+          <div className="text-center mt-8 text-gray-400 text-sm">
+            <Link href="/" className="hover:text-green-400 transition-colors">
+              ← Back to Home
+            </Link>
+          </div>
+        </motion.div>
+      </div>
+    </div>
+  );
+}
+</file>
+
+<file path="src/app/page.tsx">
+// File: src/app/page.tsx
+
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import Image from "next/image";
+import Link from "next/link";
+import { motion, AnimatePresence } from "framer-motion";
+
+export default function HomePage() {
+  const [isVisible, setIsVisible] = useState(false);
+  const [activeFeature, setActiveFeature] = useState(0);
+
+  useEffect(() => {
+    setIsVisible(true);
+  }, []);
+
+  const floatingAnimation = {
+    y: [0, -15, 0],
+    transition: {
+      duration: 4,
+      repeat: Infinity,
+      ease: "easeInOut" as any
+    }
+  };
+
+  const features = [
+    {
+      icon: "🎯",
+      title: "Structured Practice",
+      description: "Organized problem sets across different data structures and algorithm categories",
+      details: ["Arrays & Hashing", "Two Pointers", "Sliding Window", "Stacks", "Trees", "Dynamic Programming"]
+    },
+    {
+      icon: "📊", 
+      title: "Progress Tracking",
+      description: "Monitor your solving progress and improvement over time",
+      details: ["Completion tracking", "Difficulty progression", "Time analysis", "Solution quality", "Leaderboard ranking"]
+    },
+    {
+      icon: "⚡",
+      title: "Real Coding Environment",
+      description: "Practice in an environment similar to actual technical interviews",
+      details: ["Multi-language support", "Test case validation", "Real-time feedback", "Code execution", "Performance metrics"]
+    }
+  ];
+
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: {
+      y: 0,
+      opacity: 1,
+      transition: {
+        duration: 0.5
+      }
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-800 to-black relative overflow-hidden">
+      {/* NVIDIA-Style Geometric Background */}
+      <div className="absolute inset-0">
+        {/* Animated geometric shapes */}
+        <div className="absolute top-10 left-10 w-32 h-32 border border-green-400/30 rotate-45 animate-spin-slow"></div>
+        <div className="absolute top-1/3 right-20 w-24 h-24 border-2 border-green-500/40 rounded-full animate-pulse"></div>
+        <div className="absolute bottom-20 left-1/4 w-40 h-40 border border-green-300/20 rotate-12 animate-bounce-slow"></div>
+        
+        {/* Floating geometric elements */}
+        <div className="absolute top-1/2 left-1/6 w-16 h-16 bg-green-400/10 rotate-45 animate-float"></div>
+        <div className="absolute top-1/4 right-1/3 w-20 h-20 border-2 border-green-500/30 rotate-45 animate-float-reverse"></div>
+        <div className="absolute bottom-1/3 right-20 w-12 h-12 bg-gradient-to-r from-green-400/20 to-emerald-400/20 rotate-45 animate-pulse"></div>
+        
+        {/* Grid pattern overlay */}
+        <div className="absolute inset-0 opacity-5">
+          <div className="w-full h-full" style={{
+            backgroundImage: `
+              linear-gradient(rgba(34, 197, 94, 0.1) 1px, transparent 1px),
+              linear-gradient(90deg, rgba(34, 197, 94, 0.1) 1px, transparent 1px)
+            `,
+            backgroundSize: '50px 50px'
+          }}></div>
+        </div>
+        
+        {/* Glowing orbs */}
+        <div className="absolute top-1/6 left-1/3 w-64 h-64 bg-gradient-radial from-green-400/20 via-green-500/10 to-transparent rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute top-2/3 right-1/4 w-96 h-96 bg-gradient-radial from-emerald-400/15 via-green-600/8 to-transparent rounded-full blur-3xl animate-pulse delay-1000"></div>
+        <div className="absolute top-1/2 left-1/2 w-32 h-32 bg-gradient-radial from-green-300/25 via-green-400/15 to-transparent rounded-full blur-2xl animate-bounce-slow"></div>
+        
+        {/* Hexagon shapes */}
+        <div className="absolute top-16 right-1/4 w-20 h-20 hexagon bg-green-400/10 animate-spin-slow"></div>
+        <div className="absolute bottom-32 left-1/3 w-16 h-16 hexagon bg-green-500/15 animate-spin-reverse"></div>
+      </div>
+
+      <div className="relative z-10 w-full px-8 py-8">
+        {/* Hero Section */}
+        <motion.section
+          className="flex flex-col items-center justify-center text-center py-20 px-4"
+          initial="hidden"
+          animate={isVisible ? "visible" : "hidden"}
+          variants={containerVariants}
+        >
+          <motion.div
+            animate={floatingAnimation}
+            className="mb-8"
+          >
+            <div className="relative">
+              <div className="absolute inset-0 bg-gradient-to-r from-green-400 to-blue-500 rounded-full blur-2xl opacity-50 animate-pulse"></div>
+              <Image 
+                src="/logo/crt-logo.svg" 
+                alt="MustSolve Logo" 
+                width={80} 
+                height={80} 
+                className="relative rounded-2xl border-2 border-green-400/50"
+              />
+            </div>
+          </motion.div>
+
+          <motion.h1 
+            className="text-7xl font-black bg-gradient-to-r from-green-400 via-blue-400 to-purple-400 bg-clip-text text-transparent mb-6"
+            variants={itemVariants}
+          >
+            Master Data Structures & Algorithms
+          </motion.h1>
+          
+          <motion.p 
+            className="text-2xl text-gray-300 mt-4 max-w-4xl leading-relaxed"
+            variants={itemVariants}
+          >
+            Practice coding problems, track your progress, and prepare for technical interviews
+          </motion.p>
+
+          <motion.div 
+            className="mt-8 flex flex-col sm:flex-row gap-6"
+            variants={itemVariants}
+          >
+            <div className="relative group">
+              <div className="absolute inset-0 bg-gradient-to-r from-green-400 to-emerald-500 rounded-2xl blur-xl opacity-75 group-hover:opacity-100 transition-opacity duration-300 animate-pulse"></div>
+              <Link href="/practice">
+                <motion.button
+                  className="relative bg-black/80 backdrop-blur-sm text-white px-8 py-4 rounded-2xl font-bold text-lg border border-green-400/50 group-hover:border-green-400 transition-all duration-300"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  🚀 Start Practicing
+                </motion.button>
+              </Link>
+            </div>
+            
+            <div className="relative group">
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-purple-500 rounded-2xl blur-xl opacity-75 group-hover:opacity-100 transition-opacity duration-300 animate-pulse"></div>
+              <Link href="/friends">
+                <motion.button
+                  className="relative bg-black/80 backdrop-blur-sm text-white px-8 py-4 rounded-2xl font-bold text-lg border border-blue-400/50 group-hover:border-blue-400 transition-all duration-300"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  👥 Connect with Friends
+                </motion.button>
+              </Link>
+            </div>
+          </motion.div>
+        </motion.section>
+
+        {/* Interactive Features Section */}
+        <motion.section 
+          className="py-20"
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          transition={{ duration: 0.8 }}
+          viewport={{ once: true }}
+        >
+          <div className="max-w-6xl mx-auto">
+            <div className="text-center mb-16">
+              <h2 className="text-5xl font-bold text-white mb-6">Why Choose MustSolve?</h2>
+              <p className="text-xl text-gray-300">
+                Comprehensive platform designed for efficient learning and practice
+              </p>
+            </div>
+
+            {/* Feature Selector */}
+            <div className="flex justify-center mb-12">
+              <div className="flex gap-4 p-2 bg-black/40 backdrop-blur-sm rounded-2xl border border-gray-600">
+                {features.map((feature, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setActiveFeature(index)}
+                    className={`px-6 py-3 rounded-xl font-semibold transition-all duration-300 ${
+                      activeFeature === index
+                        ? 'bg-gradient-to-r from-green-400 to-blue-500 text-black'
+                        : 'text-gray-300 hover:text-white hover:bg-gray-700/50'
+                    }`}
+                  >
+                    <span className="text-2xl mr-2">{feature.icon}</span>
+                    {feature.title}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Active Feature Display */}
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeFeature}
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -30 }}
+                transition={{ duration: 0.4 }}
+                className="bg-black/60 backdrop-blur-sm rounded-3xl p-12 border border-green-500/30"
+              >
+                <div className="grid lg:grid-cols-2 gap-12 items-center">
+                  <div>
+                    <div className="flex items-center gap-4 mb-6">
+                      <div className="text-6xl">{features[activeFeature].icon}</div>
+                      <div>
+                        <h3 className="text-4xl font-bold text-white">{features[activeFeature].title}</h3>
+                      </div>
+                    </div>
+                    <p className="text-xl text-gray-300 leading-relaxed mb-8">
+                      {features[activeFeature].description}
+                    </p>
+                    <div className="grid grid-cols-1 gap-3">
+                      {features[activeFeature].details.map((detail, index) => (
+                        <motion.div
+                          key={index}
+                          className="flex items-center gap-3 p-3 bg-gray-800/50 rounded-lg"
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: index * 0.1 }}
+                        >
+                          <div className="w-3 h-3 rounded-full bg-gradient-to-r from-green-400 to-blue-500"></div>
+                          <span className="text-gray-200">{detail}</span>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-gradient-to-r from-green-400 to-blue-500 rounded-3xl blur-2xl opacity-30 animate-pulse"></div>
+                    <div className="relative bg-gradient-to-br from-gray-800 to-gray-900 rounded-3xl p-8 border border-green-400/30">
+                      <div className="text-center">
+                        <div className="text-8xl mb-6">{features[activeFeature].icon}</div>
+                        <div className="text-6xl font-black text-transparent bg-gradient-to-r from-green-400 to-blue-400 bg-clip-text mb-4">
+                          {activeFeature === 0 ? "7+" : activeFeature === 1 ? "100%" : "Real"}
+                        </div>
+                        <p className="text-gray-300 text-lg">
+                          {activeFeature === 0 ? "Problem Categories" : 
+                           activeFeature === 1 ? "Progress Visibility" : "Coding Environment"}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            </AnimatePresence>
+          </div>
+        </motion.section>
+
+        {/* Statistics Section */}
+        <motion.section 
+          className="py-20"
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          transition={{ duration: 0.8 }}
+          viewport={{ once: true }}
+        >
+          <div className="bg-black/60 backdrop-blur-sm rounded-3xl p-12 border border-purple-500/30">
+            <h2 className="text-4xl font-bold text-white text-center mb-12">Platform Stats</h2>
+            <div className="grid md:grid-cols-4 gap-8 text-center">
+              {[
+                { number: "75+", label: "Practice Problems", icon: "💡" },
+                { number: "7", label: "Categories", icon: "📚" },
+                { number: "4", label: "Languages", icon: "💻" },
+                { number: "Real-time", label: "Code Execution", icon: "⚡" }
+              ].map((stat, index) => (
+                <motion.div
+                  key={index}
+                  className="p-6 bg-gray-800/50 rounded-2xl border border-gray-700"
+                  whileHover={{ scale: 1.05, y: -10 }}
+                  transition={{ type: "spring", stiffness: 300 }}
+                >
+                  <div className="text-5xl mb-4">{stat.icon}</div>
+                  <div className="text-4xl font-black text-transparent bg-gradient-to-r from-green-400 to-blue-400 bg-clip-text mb-2">
+                    {stat.number}
+                  </div>
+                  <div className="text-gray-300 font-medium">{stat.label}</div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </motion.section>
+
+        {/* Call to Action Section */}
+        <motion.section
+          className="bg-gradient-to-r from-gray-800/50 to-gray-700/50 backdrop-blur-sm text-center py-20 px-4 rounded-3xl border border-green-400/30"
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          transition={{ duration: 0.6 }}
+          viewport={{ once: true }}
+        >
+          <h2 className="text-5xl font-bold text-white mb-6">Ready to Level Up Your Skills?</h2>
+          <p className="text-xl text-gray-300 mt-3 max-w-2xl mx-auto mb-8">
+            Start solving problems, track your progress, and prepare for your next technical interview.
+          </p>
+          
+          <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
+            <div className="relative group">
+              <div className="absolute inset-0 bg-gradient-to-r from-green-400 via-emerald-500 to-green-600 rounded-2xl blur-xl opacity-75 group-hover:opacity-100 transition-opacity duration-300 animate-pulse"></div>
+              <Link href="/practice">
+                <motion.button
+                  className="relative bg-black/80 backdrop-blur-sm text-white px-12 py-6 rounded-2xl font-bold text-xl border border-green-400/50 group-hover:border-green-400 transition-all duration-300"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  Start Practicing Now
+                </motion.button>
+              </Link>
+            </div>
+            
+            <div className="relative group">
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-400 via-purple-500 to-pink-600 rounded-2xl blur-xl opacity-75 group-hover:opacity-100 transition-opacity duration-300 animate-pulse"></div>
+              <Link href="/friends">
+                <motion.button
+                  className="relative bg-black/80 backdrop-blur-sm text-white px-12 py-6 rounded-2xl font-bold text-xl border border-blue-400/50 group-hover:border-blue-400 transition-all duration-300"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  See Friends Progress
+                </motion.button>
+              </Link>
+            </div>
+          </div>
+        </motion.section>
+
+        {/* Footer */}
+        <footer className="text-center text-sm text-gray-500 py-12 mt-20">
+          <div className="bg-black/30 backdrop-blur-sm rounded-2xl p-8 border border-gray-700">
+            <p className="text-lg">MustSolve &copy; 2025. Master algorithms, ace interviews.</p>
+            <div className="flex justify-center gap-8 mt-6">
+              <Link href="/practice" className="text-green-400 hover:text-green-300 transition-colors">Practice Problems</Link>
+              <Link href="/friends" className="text-green-400 hover:text-green-300 transition-colors">Friends & Progress</Link>
+            </div>
+          </div>
+        </footer>
+      </div>
+    </div>
+  );
+}
+</file>
+
+<file path="src/app/practice/page.tsx">
+// File: src/app/practice/page.tsx - Just remove locks, change nothing else
+
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { motion, AnimatePresence } from 'framer-motion';
+
+const PracticePage = () => {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
+  const [isVisible, setIsVisible] = useState(false);
+  const [selectedDifficulty, setSelectedDifficulty] = useState<string>('all');
+  const [hoveredProblem, setHoveredProblem] = useState<number | null>(null);
+
+  useEffect(() => {
+    setIsVisible(true);
+  }, []);
+
+  const problemCategories = [
+    {
+      id: 'arrays-hashing',
+      name: 'Arrays & Hashing',
+      total: 9,
+      completed: 1,
+      color: 'from-green-400 to-emerald-500',
+      problems: [
+        { id: 1, name: 'Two Sum', slug: 'two-sum', difficulty: 'Easy', completed: true, status: 'available' },
+        { id: 2, name: 'Contains Duplicate', difficulty: 'Easy', completed: false, status: 'available' },
+        { id: 3, name: 'Valid Anagram', difficulty: 'Easy', completed: false, status: 'available' },
+        { id: 4, name: 'Group Anagrams', difficulty: 'Medium', completed: false, status: 'available' },
+        { id: 5, name: 'Top K Frequent Elements', difficulty: 'Medium', completed: false, status: 'available' },
+        { id: 6, name: 'Product of Array Except Self', difficulty: 'Medium', completed: false, status: 'available' },
+        { id: 7, name: 'Valid Sudoku', difficulty: 'Medium', completed: false, status: 'available' },
+        { id: 8, name: 'Longest Consecutive Sequence', difficulty: 'Medium', completed: false, status: 'available' },
+        { id: 9, name: 'Trapping Rain Water', difficulty: 'Hard', completed: false, status: 'available' },
+      ]
+    },
+    {
+      id: 'two-pointers',
+      name: 'Two Pointers',
+      total: 5,
+      completed: 0,
+      color: 'from-blue-400 to-cyan-500',
+      problems: [
+        { id: 10, name: 'Valid Palindrome', difficulty: 'Easy', completed: false, status: 'available' },
+        { id: 11, name: 'Two Sum II - Input Array Is Sorted', difficulty: 'Medium', completed: false, status: 'available' },
+        { id: 12, name: '3Sum', difficulty: 'Medium', completed: false, status: 'available' },
+        { id: 13, name: 'Container With Most Water', difficulty: 'Medium', completed: false, status: 'available' },
+        { id: 14, name: 'Trapping Rain Water', difficulty: 'Hard', completed: false, status: 'available' },
+      ]
+    },
+    {
+      id: 'sliding-window',
+      name: 'Sliding Window',
+      total: 6,
+      completed: 0,
+      color: 'from-purple-400 to-pink-500',
+      problems: [
+        { id: 15, name: 'Best Time to Buy and Sell Stock', difficulty: 'Easy', completed: false, status: 'available' },
+        { id: 16, name: 'Longest Substring Without Repeating Characters', difficulty: 'Medium', completed: false, status: 'available' },
+        { id: 17, name: 'Longest Repeating Character Replacement', difficulty: 'Medium', completed: false, status: 'available' },
+        { id: 18, name: 'Permutation in String', difficulty: 'Medium', completed: false, status: 'available' },
+        { id: 19, name: 'Minimum Window Substring', difficulty: 'Hard', completed: false, status: 'available' },
+        { id: 20, name: 'Sliding Window Maximum', difficulty: 'Hard', completed: false, status: 'available' },
+      ]
+    },
+    {
+      id: 'stack',
+      name: 'Stack',
+      total: 7,
+      completed: 0,
+      color: 'from-orange-400 to-red-500',
+      problems: [
+        { id: 21, name: 'Valid Parentheses', difficulty: 'Easy', completed: false, status: 'available' },
+        { id: 22, name: 'Min Stack', difficulty: 'Medium', completed: false, status: 'available' },
+        { id: 23, name: 'Evaluate Reverse Polish Notation', difficulty: 'Medium', completed: false, status: 'available' },
+        { id: 24, name: 'Generate Parentheses', difficulty: 'Medium', completed: false, status: 'available' },
+        { id: 25, name: 'Daily Temperatures', difficulty: 'Medium', completed: false, status: 'available' },
+        { id: 26, name: 'Car Fleet', difficulty: 'Medium', completed: false, status: 'available' },
+        { id: 27, name: 'Largest Rectangle in Histogram', difficulty: 'Hard', completed: false, status: 'available' },
+      ]
+    },
+    {
+      id: 'binary-search',
+      name: 'Binary Search',
+      total: 7,
+      completed: 0,
+      color: 'from-indigo-400 to-purple-500',
+      problems: [
+        { id: 28, name: 'Binary Search', difficulty: 'Easy', completed: false, status: 'available' },
+        { id: 29, name: 'Search a 2D Matrix', difficulty: 'Medium', completed: false, status: 'available' },
+        { id: 30, name: 'Koko Eating Bananas', difficulty: 'Medium', completed: false, status: 'available' },
+        { id: 31, name: 'Find Minimum in Rotated Sorted Array', difficulty: 'Medium', completed: false, status: 'available' },
+        { id: 32, name: 'Search in Rotated Sorted Array', difficulty: 'Medium', completed: false, status: 'available' },
+        { id: 33, name: 'Time Based Key-Value Store', difficulty: 'Medium', completed: false, status: 'available' },
+        { id: 34, name: 'Median of Two Sorted Arrays', difficulty: 'Hard', completed: false, status: 'available' },
+      ]
+    },
+    {
+      id: 'linked-list',
+      name: 'Linked List',
+      total: 11,
+      completed: 0,
+      color: 'from-teal-400 to-cyan-500',
+      problems: [
+        { id: 35, name: 'Reverse Linked List', difficulty: 'Easy', completed: false, status: 'available' },
+        { id: 36, name: 'Merge Two Sorted Lists', difficulty: 'Easy', completed: false, status: 'available' },
+        { id: 37, name: 'Reorder List', difficulty: 'Medium', completed: false, status: 'available' },
+        { id: 38, name: 'Remove Nth Node From End of List', difficulty: 'Medium', completed: false, status: 'available' },
+        { id: 39, name: 'Copy List with Random Pointer', difficulty: 'Medium', completed: false, status: 'available' },
+        { id: 40, name: 'Add Two Numbers', difficulty: 'Medium', completed: false, status: 'available' },
+        { id: 41, name: 'Linked List Cycle', difficulty: 'Easy', completed: false, status: 'available' },
+        { id: 42, name: 'Find the Duplicate Number', difficulty: 'Medium', completed: false, status: 'available' },
+        { id: 43, name: 'LRU Cache', difficulty: 'Medium', completed: false, status: 'available' },
+        { id: 44, name: 'Merge k Sorted Lists', difficulty: 'Hard', completed: false, status: 'available' },
+        { id: 45, name: 'Reverse Nodes in k-Group', difficulty: 'Hard', completed: false, status: 'available' },
+      ]
+    },
+    {
+      id: 'trees',
+      name: 'Trees',
+      total: 15,
+      completed: 0,
+      color: 'from-yellow-400 to-orange-500',
+      problems: [
+        { id: 46, name: 'Invert Binary Tree', difficulty: 'Easy', completed: false, status: 'available' },
+        { id: 47, name: 'Maximum Depth of Binary Tree', difficulty: 'Easy', completed: false, status: 'available' },
+        { id: 48, name: 'Diameter of Binary Tree', difficulty: 'Easy', completed: false, status: 'available' },
+        { id: 49, name: 'Balanced Binary Tree', difficulty: 'Easy', completed: false, status: 'available' },
+        { id: 50, name: 'Same Tree', difficulty: 'Easy', completed: false, status: 'available' },
+        { id: 51, name: 'Subtree of Another Tree', difficulty: 'Easy', completed: false, status: 'available' },
+        { id: 52, name: 'Lowest Common Ancestor of a Binary Search Tree', difficulty: 'Medium', completed: false, status: 'available' },
+        { id: 53, name: 'Binary Tree Level Order Traversal', difficulty: 'Medium', completed: false, status: 'available' },
+        { id: 54, name: 'Binary Tree Right Side View', difficulty: 'Medium', completed: false, status: 'available' },
+        { id: 55, name: 'Count Good Nodes in Binary Tree', difficulty: 'Medium', completed: false, status: 'available' },
+        { id: 56, name: 'Validate Binary Search Tree', difficulty: 'Medium', completed: false, status: 'available' },
+        { id: 57, name: 'Kth Smallest Element in a BST', difficulty: 'Medium', completed: false, status: 'available' },
+        { id: 58, name: 'Construct Binary Tree from Preorder and Inorder Traversal', difficulty: 'Medium', completed: false, status: 'available' },
+        { id: 59, name: 'Binary Tree Maximum Path Sum', difficulty: 'Hard', completed: false, status: 'available' },
+        { id: 60, name: 'Serialize and Deserialize Binary Tree', difficulty: 'Hard', completed: false, status: 'available' },
+      ]
+    }
+  ];
+
+  const filteredCategories = problemCategories.filter(category =>
+    category.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    category.problems.some(problem => 
+      problem.name.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+  );
+
+  const toggleCategory = (categoryId: string) => {
+    setExpandedCategories(prev => ({
+      ...prev,
+      [categoryId]: !prev[categoryId]
+    }));
+  };
+
+  const getDifficultyColor = (difficulty: string) => {
+    switch (difficulty) {
+      case 'Easy': return 'text-green-400';
+      case 'Medium': return 'text-yellow-400';
+      case 'Hard': return 'text-red-400';
+      default: return 'text-gray-400';
+    }
+  };
+
+  const getProgressPercentage = (completed: number, total: number) => {
+    return (completed / total) * 100;
+  };
+
+  const getProblemSlug = (name: string) => {
+    return name.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '');
+  };
+
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: {
+      y: 0,
+      opacity: 1,
+      transition: {
+        duration: 0.5
+      }
+    }
+  };
+
+  const floatingAnimation = {
+    y: [0, -10, 0],
+    transition: {
+      duration: 4,
+      repeat: Infinity,
+      ease: "easeInOut" as const
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-800 to-black relative overflow-hidden">
+      {/* NVIDIA-Style Geometric Background */}
+      <div className="absolute inset-0">
+        {/* Animated geometric shapes */}
+        <div className="absolute top-10 left-10 w-32 h-32 border border-green-400/30 rotate-45 animate-spin-slow"></div>
+        <div className="absolute top-1/3 right-20 w-24 h-24 border-2 border-green-500/40 rounded-full animate-pulse"></div>
+        <div className="absolute bottom-20 left-1/4 w-40 h-40 border border-green-300/20 rotate-12 animate-bounce-slow"></div>
+        
+        {/* Floating geometric elements */}
+        <div className="absolute top-1/2 left-1/6 w-16 h-16 bg-green-400/10 rotate-45 animate-float"></div>
+        <div className="absolute top-1/4 right-1/3 w-20 h-20 border-2 border-green-500/30 rotate-45 animate-float-reverse"></div>
+        <div className="absolute bottom-1/3 right-20 w-12 h-12 bg-gradient-to-r from-green-400/20 to-emerald-400/20 rotate-45 animate-pulse"></div>
+        
+        {/* Grid pattern overlay */}
+        <div className="absolute inset-0 opacity-5">
+          <div className="w-full h-full" style={{
+            backgroundImage: `
+              linear-gradient(rgba(34, 197, 94, 0.1) 1px, transparent 1px),
+              linear-gradient(90deg, rgba(34, 197, 94, 0.1) 1px, transparent 1px)
+            `,
+            backgroundSize: '50px 50px'
+          }}></div>
+        </div>
+        
+        {/* Glowing orbs */}
+        <div className="absolute top-1/6 left-1/3 w-64 h-64 bg-gradient-radial from-green-400/20 via-green-500/10 to-transparent rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute top-2/3 right-1/4 w-96 h-96 bg-gradient-radial from-emerald-400/15 via-green-600/8 to-transparent rounded-full blur-3xl animate-pulse delay-1000"></div>
+        <div className="absolute top-1/2 left-1/2 w-32 h-32 bg-gradient-radial from-green-300/25 via-green-400/15 to-transparent rounded-full blur-2xl animate-bounce-slow"></div>
+        
+        {/* Hexagon shapes */}
+        <div className="absolute top-16 right-1/4 w-20 h-20 hexagon bg-green-400/10 animate-spin-slow"></div>
+        <div className="absolute bottom-32 left-1/3 w-16 h-16 hexagon bg-green-500/15 animate-spin-reverse"></div>
+      </div>
+
+      <div className="relative z-10 w-full px-8 py-8">
+        {/* Hero Section */}
+        <motion.div 
+          className="text-center mb-16"
+          initial="hidden"
+          animate={isVisible ? "visible" : "hidden"}
+          variants={containerVariants}
+        >
+          <motion.div
+            animate={floatingAnimation}
+            className="inline-block mb-8"
+          >
+            <div className="relative">
+              <div className="absolute inset-0 bg-gradient-to-r from-green-400 to-blue-500 rounded-2xl blur-xl opacity-75 animate-pulse"></div>
+              <div className="relative bg-black/80 backdrop-blur-sm rounded-2xl p-8 border border-green-400/30">
+                <h1 className="text-6xl font-black bg-gradient-to-r from-green-400 via-blue-400 to-purple-400 bg-clip-text text-transparent mb-4">
+                  Practice Problems
+                </h1>
+                <div className="text-2xl text-green-300 font-mono">
+                  Structured Learning Path
+                </div>
+                <div className="text-lg text-gray-400 mt-2">
+                  Solve curated problems and track your progress
+                </div>
+              </div>
+            </div>
+          </motion.div>
+
+          <motion.p 
+            className="text-xl text-gray-300 max-w-4xl mx-auto leading-relaxed"
+            variants={itemVariants}
+          >
+            Master data structures and algorithms through progressive problem-solving across different categories
+          </motion.p>
+        </motion.div>
+
+        {/* Search and Filter Section */}
+        <motion.div 
+          className="mb-12"
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+        >
+          <div className="max-w-4xl mx-auto">
+            <div className="bg-black/60 backdrop-blur-sm rounded-2xl p-6 border border-green-500/30">
+              <div className="flex flex-col md:flex-row gap-6">
+                {/* Search Bar */}
+                <div className="flex-1 relative">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <div className="h-5 w-5 text-gray-400">🔍</div>
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Search problems..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full pl-12 pr-4 py-3 bg-gray-800/50 border border-gray-600 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  />
+                </div>
+                
+                {/* Difficulty Filter */}
+                <div className="md:w-48">
+                  <select
+                    value={selectedDifficulty}
+                    onChange={(e) => setSelectedDifficulty(e.target.value)}
+                    className="w-full px-4 py-3 bg-gray-800/50 border border-gray-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  >
+                    <option value="all">All Difficulties</option>
+                    <option value="Easy">Easy</option>
+                    <option value="Medium">Medium</option>
+                    <option value="Hard">Hard</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Problem Categories */}
+        <motion.div 
+          className="space-y-6 mb-16"
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+        >
+          {filteredCategories.map((category, index) => (
+            <motion.div 
+              key={category.id} 
+              className="relative group"
+              variants={itemVariants}
+              whileHover={{ y: -5 }}
+              transition={{ type: "spring", stiffness: 300 }}
+            >
+              <div className={`absolute inset-0 bg-gradient-to-r ${category.color} rounded-2xl blur-xl opacity-20 group-hover:opacity-30 transition-opacity duration-300`}></div>
+              <div className="relative bg-black/60 backdrop-blur-sm rounded-2xl border border-gray-700 overflow-hidden">
+                {/* Category Header */}
+                <div
+                  className="flex items-center justify-between p-6 cursor-pointer hover:bg-gray-800/30 transition-colors"
+                  onClick={() => toggleCategory(category.id)}
+                >
+                  <div className="flex items-center space-x-4">
+                    <div className="flex-shrink-0">
+                      {expandedCategories[category.id] ? (
+                        <div className="w-6 h-6 text-green-400">▼</div>
+                      ) : (
+                        <div className="w-6 h-6 text-green-400">▶</div>
+                      )}
+                    </div>
+                    <div className={`w-12 h-12 bg-gradient-to-r ${category.color} rounded-xl flex items-center justify-center text-black font-bold text-lg`}>
+                      {category.name.charAt(0)}
+                    </div>
+                    <div>
+                      <h2 className="text-2xl font-bold text-white">{category.name}</h2>
+                      <span className="text-gray-400">
+                        {category.completed} / {category.total} completed
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-6">
+                    <div className="w-32">
+                      <div className="w-full bg-gray-700 rounded-full h-2">
+                        <div
+                          className={`bg-gradient-to-r ${category.color} h-2 rounded-full transition-all duration-500`}
+                          style={{ width: `${getProgressPercentage(category.completed, category.total)}%` }}
+                        />
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-2xl font-bold text-white">
+                        {Math.round(getProgressPercentage(category.completed, category.total))}%
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Problems List */}
+                <AnimatePresence>
+                  {expandedCategories[category.id] && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.3 }}
+                      className="border-t border-gray-700"
+                    >
+                      {category.problems
+                        .filter(problem => 
+                          selectedDifficulty === 'all' || problem.difficulty === selectedDifficulty
+                        )
+                        .map((problem, problemIndex) => (
+                        <motion.div
+                          key={problem.id}
+                          className="flex items-center justify-between p-4 hover:bg-gray-800/30 transition-colors border-b border-gray-800 last:border-b-0 cursor-pointer"
+                          whileHover={{ x: 10 }}
+                          onHoverStart={() => setHoveredProblem(problem.id)}
+                          onHoverEnd={() => setHoveredProblem(null)}
+                        >
+                          <div className="flex items-center space-x-4">
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${
+                              problem.completed 
+                                ? `bg-gradient-to-r ${category.color} border-transparent` 
+                                : 'border-green-400'
+                            }`}>
+                              {problem.completed ? (
+                                <div className="text-black font-bold">✓</div>
+                              ) : (
+                                <div className="w-3 h-3 rounded-full bg-green-400"></div>
+                              )}
+                            </div>
+                            <Link href={`/problems/${getProblemSlug(problem.name)}`}>
+                              <span className="text-white font-medium hover:text-green-400 transition-colors">
+                                {problem.name}
+                              </span>
+                            </Link>
+                          </div>
+                          <div className="flex items-center space-x-4">
+                            <span className={`text-sm font-medium ${getDifficultyColor(problem.difficulty)}`}>
+                              {problem.difficulty}
+                            </span>
+                            <div className={`text-green-400 transition-transform ${
+                              hoveredProblem === problem.id ? 'translate-x-1' : ''
+                            }`}>
+                              →
+                            </div>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            </motion.div>
+          ))}
+        </motion.div>
+
+        {/* Stats Summary */}
+        <motion.div 
+          className="grid grid-cols-1 md:grid-cols-4 gap-6"
+          initial={{ opacity: 0, y: 50 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
+          viewport={{ once: true }}
+        >
+          {[
+            { 
+              title: "Problems Solved", 
+              value: problemCategories.reduce((sum, cat) => sum + cat.completed, 0),
+              icon: "🎯",
+              color: "from-green-400 to-emerald-500"
+            },
+            { 
+              title: "Total Problems", 
+              value: problemCategories.reduce((sum, cat) => sum + cat.total, 0),
+              icon: "📚",
+              color: "from-blue-400 to-cyan-500"
+            },
+            { 
+              title: "Completion Rate", 
+              value: `${Math.round(
+                (problemCategories.reduce((sum, cat) => sum + cat.completed, 0) /
+                 problemCategories.reduce((sum, cat) => sum + cat.total, 0)) * 100
+              )}%`,
+              icon: "📊",
+              color: "from-purple-400 to-pink-500"
+            },
+            { 
+              title: "Categories", 
+              value: problemCategories.length,
+              icon: "🗂️",
+              color: "from-orange-400 to-red-500"
+            }
+          ].map((stat, index) => (
+            <motion.div
+              key={index}
+              className="relative group"
+              whileHover={{ y: -10, scale: 1.02 }}
+              transition={{ type: "spring", stiffness: 300 }}
+            >
+              <div className={`absolute inset-0 bg-gradient-to-r ${stat.color} rounded-2xl blur-xl opacity-20 group-hover:opacity-40 transition-opacity duration-300`}></div>
+              <div className="relative bg-black/60 backdrop-blur-sm rounded-2xl p-6 border border-gray-700 text-center">
+                <div className="text-4xl mb-4">{stat.icon}</div>
+                <div className="text-3xl font-black text-transparent bg-gradient-to-r from-green-400 to-blue-400 bg-clip-text mb-2">
+                  {stat.value}
+                </div>
+                <div className="text-gray-300 font-medium">{stat.title}</div>
+              </div>
+            </motion.div>
+          ))}
+        </motion.div>
+      </div>
+    </div>
+  );
+};
+
+export default PracticePage;
+</file>
+
+<file path="src/app/problems/[slug]/page.tsx">
+// File: src/app/problems/[slug]/page.tsx
+'use client';
+
+import { useParams } from 'next/navigation';
+import { problems } from '@/data/problem';
+import React, { useState, useRef, useEffect } from 'react';
+import { Play, Maximize2, RotateCcw, ChevronDown } from 'lucide-react';
+
+type Language = 'JavaScript' | 'Python' | 'Java' | 'C++';
+
+// Type definitions for different problem types
+interface TwoSumTestCase {
+  id: number;
+  type: 'two-sum';
+  nums: number[];
+  target: number;
+  expected: number[];
+}
+
+interface ValidAnagramTestCase {
+  id: number;
+  type: 'valid-anagram';
+  s: string;
+  t: string;
+  expected: boolean;
+}
+
+type TestCase = TwoSumTestCase | ValidAnagramTestCase;
+
+const CodeEditor = React.memo(({ 
+  code, 
+  setCode, 
+  selectedLanguage, 
+  handleLanguageChange, 
+  handleReset, 
+  isFullscreen, 
+  setIsFullscreen,
+  languageTemplates 
+}: {
+  code: string;
+  setCode: (code: string) => void;
+  selectedLanguage: Language;
+  handleLanguageChange: (event: React.ChangeEvent<HTMLSelectElement>) => void;
+  handleReset: () => void;
+  isFullscreen: boolean;
+  setIsFullscreen: (fullscreen: boolean) => void;
+  languageTemplates: { [key in Language]: string };
+}) => {
+  const codeEditorRef = useRef<HTMLTextAreaElement>(null);
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      const textarea = e.currentTarget;
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      
+      const newValue = code.substring(0, start) + '    ' + code.substring(end);
+      setCode(newValue);
+      
+      setTimeout(() => {
+        textarea.selectionStart = textarea.selectionEnd = start + 4;
+      }, 0);
+    }
+    
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const textarea = e.currentTarget;
+      const start = textarea.selectionStart;
+      const lines = code.substring(0, start).split('\n');
+      const currentLine = lines[lines.length - 1];
+      
+      const indentMatch = currentLine.match(/^(\s*)/);
+      const currentIndent = indentMatch ? indentMatch[1] : '';
+      const extraIndent = currentLine.trim().endsWith('{') ? '    ' : '';
+      
+      const newValue = code.substring(0, start) + '\n' + currentIndent + extraIndent + code.substring(start);
+      setCode(newValue);
+      
+      setTimeout(() => {
+        textarea.selectionStart = textarea.selectionEnd = start + 1 + currentIndent.length + extraIndent.length;
+      }, 0);
+    }
+  };
+
+  return (
+    <div className="w-1/2 flex flex-col bg-gray-900">
+      {/* Editor Header */}
+      <div className="bg-gray-800 border-b border-gray-700 p-3 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <div className="relative">
+            <select
+              value={selectedLanguage}
+              onChange={handleLanguageChange}
+              className="bg-gray-700 text-white border border-gray-600 rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 appearance-none pr-8"
+            >
+              {Object.keys(languageTemplates).map((lang) => (
+                <option key={lang} value={lang}>{lang}</option>
+              ))}
+            </select>
+            <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleReset}
+            className="p-1.5 text-gray-400 hover:text-white hover:bg-gray-700 rounded transition-colors"
+            title="Reset Code"
+          >
+            <RotateCcw className="h-4 w-4" />
+          </button>
+          <button
+            onClick={() => setIsFullscreen(!isFullscreen)}
+            className="p-1.5 text-gray-400 hover:text-white hover:bg-gray-700 rounded transition-colors"
+            title="Fullscreen"
+          >
+            <Maximize2 className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+
+      {/* Code Editor Area */}
+      <div className="flex-1 relative">
+        <textarea
+          ref={codeEditorRef}
+          value={code}
+          onChange={(e) => setCode(e.target.value)}
+          onKeyDown={handleKeyDown}
+          className="absolute inset-0 w-full h-full bg-gray-900 text-gray-100 font-mono text-sm pl-16 pr-4 py-4 resize-none focus:outline-none selection:bg-blue-500 selection:bg-opacity-30"
+          style={{ lineHeight: '1.5', zIndex: 2 }}
+          spellCheck={false}
+          autoComplete="off"
+          autoCorrect="off"
+          autoCapitalize="off"
+        />
+        
+        {/* Line numbers */}
+        <div className="absolute left-0 top-0 bottom-0 w-12 bg-gray-800 border-r border-gray-700 flex flex-col text-gray-500 text-sm font-mono pt-4 pointer-events-none">
+          {code.split('\n').map((_, index) => (
+            <div key={`line-${index}`} className="px-2 text-right" style={{ height: '1.5em' }}>
+              {index + 1}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+});
+
+CodeEditor.displayName = 'CodeEditor';
+
+// Simplified execution function - backend handles all the complexity now
+const executeCode = (code: string, language: Language, testCase: TestCase, problemType: string): Promise<{ success: boolean; output: string; error?: string }> => {
+  return new Promise(async (resolve) => {
+    try {
+      if (language === 'Java') {
+        // Real Java execution via backend
+        const response = await fetch('http://localhost:3001/api/execute-java', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            code,
+            testCases: [testCase],
+            problemType
+          })
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ error: 'Network error' }));
+          resolve({
+            success: false,
+            output: '',
+            error: `Server Error\n\n${errorData.error || 'Failed to connect to execution server'}`
+          });
+          return;
+        }
+
+        const result = await response.json();
+        
+        if (result.error) {
+          resolve({ success: false, output: '', error: result.error });
+          return;
+        }
+
+        const testResult = result.results[0];
+        
+        let output = formatInput(testCase, problemType);
+        
+        if (testResult.error) {
+          resolve({ success: false, output: '', error: testResult.error });
+          return;
+        }
+        
+        output += `Your Output:\n\n${testResult.actualOutput}\n\n`;
+        output += `Expected output:\n\n${testResult.expectedOutput}`;
+        
+        resolve({
+          success: testResult.success,
+          output: output + (testResult.success ? '\n\n✅ Test case passed!' : '\n\n❌ Test case failed!')
+        });
+
+      } else if (language === 'JavaScript') {
+        // Client-side JavaScript execution
+        executeJavaScript(code, testCase, problemType, resolve);
+      } else {
+        // Placeholder for other languages
+        executeOtherLanguage(testCase, problemType, resolve);
+      }
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      resolve({
+        success: false,
+        output: '',
+        error: `Network Error\n\nFailed to connect to backend server. Make sure the backend is running on http://localhost:3001\n\nError: ${errorMessage}`
+      });
+    }
+  });
+};
+
+// Helper function to format input display
+const formatInput = (testCase: TestCase, problemType: string): string => {
+  if (problemType === 'two-sum') {
+    const twoSumCase = testCase as TwoSumTestCase;
+    return `Input:\nnums=[${twoSumCase.nums.join(',')}], target=${twoSumCase.target}\n\n`;
+  } else if (problemType === 'valid-anagram') {
+    const anagramCase = testCase as ValidAnagramTestCase;
+    return `Input:\ns="${anagramCase.s}", t="${anagramCase.t}"\n\n`;
+  }
+  return '';
+};
+
+// Extracted JavaScript execution logic
+    const executeJavaScript = (
+      code: string, 
+      testCase: TestCase, 
+      problemType: string, 
+      resolve: (value: { success: boolean; output: string; error?: string }) => void
+    ) => {  try {
+    const consoleOutput: string[] = [];
+    const originalConsoleLog = console.log;
+    console.log = (...args) => {
+      consoleOutput.push(args.map(arg => String(arg)).join(' '));
+    };
+
+    let result: any;
+    let functionName: string = 'function';
+
+    if (problemType === 'two-sum') {
+      const twoSumCase = testCase as TwoSumTestCase;
+      const func = new Function('nums', 'target', `
+        ${code}
+        return typeof twoSum !== 'undefined' ? twoSum(nums, target) : undefined;
+      `);
+      result = func(twoSumCase.nums, twoSumCase.target);
+      functionName = 'twoSum';
+    } else if (problemType === 'valid-anagram') {
+      const anagramCase = testCase as ValidAnagramTestCase;
+      const func = new Function('s', 't', `
+        ${code}
+        return typeof isAnagram !== 'undefined' ? isAnagram(s, t) : undefined;
+      `);
+      result = func(anagramCase.s, anagramCase.t);
+      functionName = 'isAnagram';
+    }
+    
+    console.log = originalConsoleLog;
+    
+    let output = '';
+    
+    if (consoleOutput.length > 0) {
+      output += 'Console Output:\n' + consoleOutput.join('\n') + '\n\n';
+    }
+    
+    if (result === undefined) {
+      output += `No return value from ${functionName} function`;
+      resolve({ success: false, output: output });
+      return;
+    }
+    
+    output += formatInput(testCase, problemType);
+    
+    if (problemType === 'two-sum') {
+      const twoSumCase = testCase as TwoSumTestCase;
+      const resultStr = JSON.stringify(result);
+      const expectedStr = JSON.stringify(twoSumCase.expected);
+      
+      output += `Output: ${resultStr}\nExpected: ${expectedStr}\n\n`;
+      
+      const success = resultStr === expectedStr;
+      output += success ? '✓ Test case passed' : '✗ Test case failed - Wrong Answer';
+      resolve({ success, output });
+    } else if (problemType === 'valid-anagram') {
+      const anagramCase = testCase as ValidAnagramTestCase;
+      
+      output += `Output: ${result}\nExpected: ${anagramCase.expected}\n\n`;
+      
+      const success = result === anagramCase.expected;
+      output += success ? '✓ Test case passed' : '✗ Test case failed - Wrong Answer';
+      resolve({ success, output });
+    }
+    
+  } catch (execError: unknown) {
+    const errorMessage = execError instanceof Error ? execError.message : 'Unknown error occurred';
+    resolve({
+      success: false,
+      output: '',
+      error: `Runtime Error\n\n${errorMessage}`
+    });
+  }
+};
+
+// Placeholder execution for other languages
+    const executeOtherLanguage = (
+      testCase: TestCase, 
+      problemType: string, 
+      resolve: (value: { success: boolean; output: string; error?: string }) => void
+    ) => {  setTimeout(() => {
+    const output = formatInput(testCase, problemType);
+    
+    if (problemType === 'two-sum') {
+      const twoSumCase = testCase as TwoSumTestCase;
+      resolve({
+        success: true,
+        output: output + `Output: [${twoSumCase.expected.join(',')}]\nExpected: [${twoSumCase.expected.join(',')}]\n\n✓ Test case passed`
+      });
+    } else if (problemType === 'valid-anagram') {
+      const anagramCase = testCase as ValidAnagramTestCase;
+      resolve({
+        success: true,
+        output: output + `Output: ${anagramCase.expected}\nExpected: ${anagramCase.expected}\n\n✓ Test case passed`
+      });
+    }
+  }, 1000);
+};
+
+const TestCaseEditor = React.memo(({ 
+  testCase, 
+  onUpdate,
+  problemType
+}: { 
+  testCase: TestCase,
+  onUpdate: (id: number, field: string, value: any) => void,
+  problemType: string
+}) => {
+  if (problemType === 'two-sum') {
+    const twoSumCase = testCase as TwoSumTestCase;
+    
+    const parseArrayInput = (input: string): number[] => {
+      try {
+        const cleanInput = input.replace(/[\[\]]/g, '').trim();
+        if (!cleanInput) return [];
+        return cleanInput.split(',').map(num => parseInt(num.trim(), 10)).filter(num => !isNaN(num));
+      } catch {
+        return [];
+      }
+    };
+
+    return (
+      <div className="space-y-3">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">nums =</label>
+          <input
+            type="text"
+            defaultValue={`[${twoSumCase.nums.join(', ')}]`}
+            onBlur={(e) => {
+              const newNums = parseArrayInput(e.target.value);
+              onUpdate(twoSumCase.id, 'nums', newNums);
+            }}
+            className="w-full p-3 border border-gray-300 rounded font-mono text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+            placeholder="[1, 2, 3]"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">target =</label>
+          <input
+            type="number"
+            defaultValue={twoSumCase.target}
+            onBlur={(e) => {
+              const newTarget = parseInt(e.target.value, 10);
+              if (!isNaN(newTarget)) {
+                onUpdate(twoSumCase.id, 'target', newTarget);
+              }
+            }}
+            className="w-full p-3 border border-gray-300 rounded font-mono text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+            placeholder="9"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">expected =</label>
+          <input
+            type="text"
+            defaultValue={`[${twoSumCase.expected.join(', ')}]`}
+            onBlur={(e) => {
+              const newExpected = parseArrayInput(e.target.value);
+              onUpdate(twoSumCase.id, 'expected', newExpected);
+            }}
+            className="w-full p-3 border border-gray-300 rounded font-mono text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+            placeholder="[0, 1]"
+          />
+        </div>
+      </div>
+    );
+  } else if (problemType === 'valid-anagram') {
+    const anagramCase = testCase as ValidAnagramTestCase;
+    
+    return (
+      <div className="space-y-3">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">s =</label>
+          <input
+            type="text"
+            defaultValue={anagramCase.s}
+            onBlur={(e) => {
+              onUpdate(anagramCase.id, 's', e.target.value);
+            }}
+            className="w-full p-3 border border-gray-300 rounded font-mono text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+            placeholder="anagram"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">t =</label>
+          <input
+            type="text"
+            defaultValue={anagramCase.t}
+            onBlur={(e) => {
+              onUpdate(anagramCase.id, 't', e.target.value);
+            }}
+            className="w-full p-3 border border-gray-300 rounded font-mono text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+            placeholder="nagaram"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">expected =</label>
+          <select
+            defaultValue={anagramCase.expected.toString()}
+            onChange={(e) => {
+              onUpdate(anagramCase.id, 'expected', e.target.value === 'true');
+            }}
+            className="w-full p-3 border border-gray-300 rounded font-mono text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+          >
+            <option value="true">true</option>
+            <option value="false">false</option>
+          </select>
+        </div>
+      </div>
+    );
+  }
+  
+  return null;
+});
+
+TestCaseEditor.displayName = 'TestCaseEditor';
+
+export default function ProblemPage() {
+  const { slug } = useParams() as { slug: string };
+  const problem = problems.find((p) => p.slug === slug);
+
+  const [activeLeftTab, setActiveLeftTab] = useState('Question');
+  const [activeBottomTab, setActiveBottomTab] = useState('Test Case');
+  const [selectedLanguage, setSelectedLanguage] = useState<Language>('Java');
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [code, setCode] = useState('');
+  const [isRunning, setIsRunning] = useState(false);
+  const [output, setOutput] = useState('');
+  const [activeTestCase, setActiveTestCase] = useState(1);
+
+  const problemType = slug === 'two-sum' ? 'two-sum' : slug === 'valid-anagram' ? 'valid-anagram' : 'two-sum';
+
+  const getLanguageTemplates = (problemType: string): { [key in Language]: string } => {
+    if (problemType === 'two-sum') {
+      return {
+        'JavaScript': `/**\n * @param {number[]} nums\n * @param {number} target\n * @return {number[]}\n */\nvar twoSum = function(nums, target) {\n    // Write your solution here\n    \n};`,
+        'Python': `def twoSum(nums, target):\n    """\n    :type nums: List[int]\n    :type target: int\n    :rtype: List[int]\n    """\n    # Write your solution here\n    pass`,
+        'Java': `class Solution {\n    public int[] twoSum(int[] nums, int target) {\n        // Write your solution here\n        \n    }\n}`,
+        'C++': `class Solution {\npublic:\n    vector<int> twoSum(vector<int>& nums, int target) {\n        // Write your solution here\n        \n    }\n};`
+      };
+    } else if (problemType === 'valid-anagram') {
+      return {
+        'JavaScript': `/**\n * @param {string} s\n * @param {string} t\n * @return {boolean}\n */\nvar isAnagram = function(s, t) {\n    // Write your solution here\n    \n};`,
+        'Python': `def isAnagram(s, t):\n    """\n    :type s: str\n    :type t: str\n    :rtype: bool\n    """\n    # Write your solution here\n    pass`,
+        'Java': `class Solution {\n    public boolean isAnagram(String s, String t) {\n        // Write your solution here\n        \n    }\n}`,
+        'C++': `class Solution {\npublic:\n    bool isAnagram(string s, string t) {\n        // Write your solution here\n        \n    }\n};`
+      };
+    }
+    return getLanguageTemplates('two-sum');
+  };
+
+  const languageTemplates = getLanguageTemplates(problemType);
+
+  const getDefaultTestCases = (problemType: string): TestCase[] => {
+    if (problemType === 'two-sum') {
+      return [
+        { id: 1, type: 'two-sum', nums: [2, 7, 11, 15], target: 9, expected: [0, 1] },
+        { id: 2, type: 'two-sum', nums: [3, 2, 4], target: 6, expected: [1, 2] },
+        { id: 3, type: 'two-sum', nums: [3, 3], target: 6, expected: [0, 1] }
+      ];
+    } else if (problemType === 'valid-anagram') {
+      return [
+        { id: 1, type: 'valid-anagram', s: 'anagram', t: 'nagaram', expected: true },
+        { id: 2, type: 'valid-anagram', s: 'rat', t: 'car', expected: false },
+        { id: 3, type: 'valid-anagram', s: 'listen', t: 'silent', expected: true }
+      ];
+    }
+    return getDefaultTestCases('two-sum');
+  };
+
+  const [testCases, setTestCases] = useState<TestCase[]>(getDefaultTestCases(problemType));
+
+  const addTestCase = () => {
+    const newId = Math.max(...testCases.map(tc => tc.id)) + 1;
+    let newTestCase: TestCase;
+    
+    if (problemType === 'two-sum') {
+      newTestCase = { id: newId, type: 'two-sum', nums: [1, 2], target: 3, expected: [0, 1] };
+    } else if (problemType === 'valid-anagram') {
+      newTestCase = { id: newId, type: 'valid-anagram', s: 'test', t: 'sett', expected: true };
+    } else {
+      newTestCase = { id: newId, type: 'two-sum', nums: [1, 2], target: 3, expected: [0, 1] };
+    }
+    
+    setTestCases([...testCases, newTestCase]);
+    setActiveTestCase(newId);
+  };
+
+  const updateTestCase = (id: number, field: string, value: any) => {
+    setTestCases(testCases.map(tc => 
+      tc.id === id ? { ...tc, [field]: value } : tc
+    ));
+  };
+
+  const deleteTestCase = (id: number) => {
+    if (testCases.length > 1) {
+      setTestCases(testCases.filter(tc => tc.id !== id));
+      if (activeTestCase === id) {
+        setActiveTestCase(testCases[0].id);
+      }
+    }
+  };
+
+  useEffect(() => {
+    setCode(languageTemplates[selectedLanguage]);
+  }, [selectedLanguage, problemType]);
+
+  useEffect(() => {
+    setTestCases(getDefaultTestCases(problemType));
+    setActiveTestCase(1);
+  }, [problemType]);
+
+  useEffect(() => {
+    setCode(languageTemplates['Java']);
+  }, []);
+
+  if (!problem) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Problem not found</h1>
+          <p className="text-gray-600">The problem you're looking for doesn't exist.</p>
+        </div>
+      </div>
+    );
+  }
+
+  const handleLanguageChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedLanguage(event.target.value as Language);
+  };
+
+  const handleReset = () => {
+    setCode(languageTemplates[selectedLanguage]);
+    setOutput('');
+  };
+
+  const handleRun = async () => {
+    setIsRunning(true);
+    setActiveBottomTab('Output');
+    
+    const currentTestCase = testCases.find(tc => tc.id === activeTestCase);
+    if (!currentTestCase) return;
+    
+    const result = await executeCode(code, selectedLanguage, currentTestCase, problemType);
+    
+    if (result.error) {
+      setOutput(result.error);
+    } else {
+      setOutput(result.output);
+    }
+    
+    setIsRunning(false);
+  };
+
+  const handleSubmit = () => {
+    alert('Submission functionality will be implemented with backend integration');
+  };
+
+  const LeftSidebar = () => (
+    <div className="w-1/2 bg-white border-r border-gray-200 flex flex-col">
+      <div className="border-b border-gray-200">
+        <div className="flex">
+          {['Question', 'Solution', 'Submissions', 'Notes'].map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveLeftTab(tab)}
+              className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                activeLeftTab === tab
+                  ? 'border-green-500 text-green-600 bg-green-50'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              {tab}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-6">
+        {activeLeftTab === 'Question' && (
+          <div className="space-y-6">
+            <div>
+              <div className="flex items-center gap-2 mb-4">
+                <h1 className="text-2xl font-bold text-gray-900">{problem.title}</h1>
+                <span className={`px-2 py-1 text-sm font-medium rounded ${
+                  problem.difficulty === 'Easy' ? 'bg-green-100 text-green-600' :
+                  problem.difficulty === 'Medium' ? 'bg-yellow-100 text-yellow-600' :
+                  'bg-red-100 text-red-600'
+                }`}>
+                  {problem.difficulty}
+                </span>
+              </div>
+              
+              <div className="prose max-w-none">
+                <div className="text-gray-700 mb-6 whitespace-pre-wrap">
+                  {problem.description}
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="font-semibold text-gray-900 mb-2">Example:</h3>
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <div className="font-mono text-sm">
+                        <div><strong>Input:</strong> {problem.exampleInput}</div>
+                        <div><strong>Output:</strong> {problem.exampleOutput}</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeLeftTab === 'Solution' && (
+          <div className="text-center py-12">
+            <div className="text-gray-400 mb-2">💡</div>
+            <p className="text-gray-500">Solution content will be available here</p>
+          </div>
+        )}
+
+        {activeLeftTab === 'Submissions' && (
+          <div className="text-center py-12">
+            <div className="text-gray-400 mb-2">📝</div>
+            <p className="text-gray-500">Your submission history will appear here</p>
+          </div>
+        )}
+
+        {activeLeftTab === 'Notes' && (
+          <div className="text-center py-12">
+            <div className="text-gray-400 mb-2">📋</div>
+            <p className="text-gray-500">Take notes about this problem</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  const BottomPanel = () => (
+    <div className="h-64 bg-white border-t border-gray-200 flex flex-col">
+      <div className="border-b border-gray-200 p-3 flex items-center justify-between">
+        <div className="flex">
+          {['Test Case', 'Output'].map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveBottomTab(tab)}
+              className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                activeBottomTab === tab
+                  ? 'border-green-500 text-green-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              {tab}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleRun}
+            disabled={isRunning}
+            className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            {isRunning ? (
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <Play className="h-4 w-4" />
+            )}
+            Run
+          </button>
+
+          <button
+            onClick={handleSubmit}
+            className="px-4 py-2 bg-gray-800 text-white rounded hover:bg-gray-900 transition-colors"
+          >
+            Submit
+          </button>
+        </div>
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-4">
+        {activeBottomTab === 'Test Case' && (
+          <div className="space-y-4">
+            <div className="flex gap-2 items-center">
+              {testCases.map((testCase) => (
+                <div key={testCase.id} className="flex items-center">
+                  <button
+                    onClick={() => setActiveTestCase(testCase.id)}
+                    className={`px-3 py-1.5 text-sm rounded-l border ${
+                      activeTestCase === testCase.id
+                        ? 'bg-green-100 border-green-300 text-green-700'
+                        : 'bg-gray-100 border-gray-300 text-gray-600 hover:bg-gray-200'
+                    }`}
+                  >
+                    Case {testCase.id}
+                  </button>
+                  {testCases.length > 1 && (
+                    <button
+                      onClick={() => deleteTestCase(testCase.id)}
+                      className={`px-2 py-1.5 text-sm rounded-r border-l-0 border text-red-600 hover:bg-red-50 ${
+                        activeTestCase === testCase.id
+                          ? 'border-green-300'
+                          : 'border-gray-300'
+                      }`}
+                      title="Delete test case"
+                    >
+                      ×
+                    </button>
+                  )}
+                </div>
+              ))}
+              <button
+                onClick={addTestCase}
+                className="px-3 py-1.5 text-sm rounded border border-dashed border-gray-400 text-gray-600 hover:bg-gray-50 hover:border-gray-500"
+                title="Add test case"
+              >
+                + Add
+              </button>
+            </div>
+
+            {(() => {
+              const currentTest = testCases.find(tc => tc.id === activeTestCase);
+              if (!currentTest) return null;
+              
+              return <TestCaseEditor testCase={currentTest} onUpdate={updateTestCase} problemType={problemType} />;
+            })()}
+          </div>
+        )}
+
+        {activeBottomTab === 'Output' && (
+          <div className="h-full">
+            {output ? (
+              <div className="h-full overflow-y-auto">
+                <pre className="font-mono text-sm text-gray-800 whitespace-pre-wrap break-words p-2">
+                  {output}
+                </pre>
+              </div>
+            ) : (
+              <div className="text-gray-500 text-sm p-4">
+                Click "Run" to see the output of your code
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="h-screen flex flex-col bg-gray-100">
+      <div className="flex-1 flex overflow-hidden">
+        <LeftSidebar />
+        <CodeEditor 
+          code={code}
+          setCode={setCode}
+          selectedLanguage={selectedLanguage}
+          handleLanguageChange={handleLanguageChange}
+          handleReset={handleReset}
+          isFullscreen={isFullscreen}
+          setIsFullscreen={setIsFullscreen}
+          languageTemplates={languageTemplates}
+        />
+      </div>
+      
+      <BottomPanel />
+    </div>
+  );
+}
+</file>
+
+<file path="src/components/Navbar.tsx">
+// File: src/components/Navbar.tsx
+
+'use client';
+
+import Link from "next/link";
+import Image from "next/image";
+import { useAuth } from "@/contexts/AuthContext";
+import { useState } from "react";
+
+export default function Navbar() {
+  const { user, signOut, loading } = useAuth();
+  const [showUserMenu, setShowUserMenu] = useState(false);
+
+  const handleSignOut = async () => {
+    await signOut();
+    setShowUserMenu(false);
+  };
+
+  return (
+    <nav className="sticky top-0 z-50 bg-black/95 backdrop-blur-lg border-b border-green-400/20">
+      <div className="max-w-8xl mx-auto px-8 py-5">
+        <div className="flex items-center justify-between">
+          {/* Logo */}
+          <Link href="/" className="flex items-center gap-4 group">
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent">
+              MustSolve
+            </h1>
+            <Image
+              src="/logo/crt-logo.svg"
+              alt="MustSolve Logo"
+              width={32}
+              height={32}
+              className="rounded-lg border border-green-400/30 group-hover:border-green-400 transition-colors duration-200"
+            />
+          </Link>
+
+          {/* Navigation Links - Centered */}
+          <div className="absolute left-1/2 transform -translate-x-1/2 flex items-center space-x-3">
+            <Link
+              href="/"
+              className="px-5 py-2.5 rounded-full text-gray-300 hover:text-white hover:bg-green-500/20 active:bg-green-500/30 active:scale-95 transition-all duration-200 font-medium border border-transparent hover:border-green-400/30"
+            >
+              Home
+            </Link>
+            <Link
+              href="/practice"
+              className="px-5 py-2.5 rounded-full text-gray-300 hover:text-white hover:bg-green-500/20 active:bg-green-500/30 active:scale-95 transition-all duration-200 font-medium border border-transparent hover:border-green-400/30"
+            >
+              Practice
+            </Link>
+            <Link
+              href="/friends"
+              className="px-5 py-2.5 rounded-full text-gray-300 hover:text-white hover:bg-green-500/20 active:bg-green-500/30 active:scale-95 transition-all duration-200 font-medium border border-transparent hover:border-green-400/30"
+            >
+              Friends
+            </Link>
+          </div>
+
+          {/* Auth Section */}
+          <div className="flex items-center">
+            {loading ? (
+              <div className="w-8 h-8 border-2 border-green-400 border-t-transparent rounded-full animate-spin"></div>
+            ) : user ? (
+              /* User Menu */
+              <div className="relative">
+                <button
+                  onClick={() => setShowUserMenu(!showUserMenu)}
+                  className="flex items-center gap-3 px-4 py-2 bg-gray-800/50 border border-gray-600 rounded-full hover:bg-gray-700/50 transition-all duration-200"
+                >
+                  <div className="w-8 h-8 bg-gradient-to-r from-green-400 to-blue-500 rounded-full flex items-center justify-center text-black font-bold">
+                    {user.user_metadata?.first_name?.charAt(0) || user.email?.charAt(0) || '?'}
+                  </div>
+                  <span className="text-white font-medium">
+                    {user.user_metadata?.first_name || 'User'}
+                  </span>
+                  <svg 
+                    className={`w-4 h-4 text-gray-400 transition-transform ${showUserMenu ? 'rotate-180' : ''}`} 
+                    fill="none" 
+                    stroke="currentColor" 
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+
+                {/* Dropdown Menu */}
+                {showUserMenu && (
+                  <div className="absolute right-0 mt-2 w-56 bg-gray-800 border border-gray-700 rounded-xl shadow-2xl py-2">
+                    <div className="px-4 py-3 border-b border-gray-700">
+                      <p className="text-white font-medium">
+                        {user.user_metadata?.first_name} {user.user_metadata?.last_name}
+                      </p>
+                      <p className="text-gray-400 text-sm">{user.email}</p>
+                    </div>
+                    
+                    <Link 
+                      href="/profile" 
+                      className="flex items-center gap-3 px-4 py-2 text-gray-300 hover:text-white hover:bg-gray-700/50 transition-colors"
+                      onClick={() => setShowUserMenu(false)}
+                    >
+                      <span>👤</span>
+                      Profile
+                    </Link>
+                    
+                    <Link 
+                      href="/settings" 
+                      className="flex items-center gap-3 px-4 py-2 text-gray-300 hover:text-white hover:bg-gray-700/50 transition-colors"
+                      onClick={() => setShowUserMenu(false)}
+                    >
+                      <span>⚙️</span>
+                      Settings
+                    </Link>
+                    
+                    <hr className="my-2 border-gray-700" />
+                    
+                    <button
+                      onClick={handleSignOut}
+                      className="flex items-center gap-3 px-4 py-2 text-red-400 hover:text-red-300 hover:bg-gray-700/50 transition-colors w-full text-left"
+                    >
+                      <span>🚪</span>
+                      Sign Out
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              /* Login Button */
+              <Link
+                href="/login"
+                className="px-6 py-2.5 bg-transparent border-2 border-green-400 text-green-400 rounded-full hover:bg-green-400 hover:text-black hover:shadow-lg hover:shadow-green-400/25 active:scale-95 transition-all duration-200 font-semibold"
+              >
+                Login
+              </Link>
+            )}
+          </div>
+        </div>
+      </div>
+    </nav>
+  );
+}
+</file>
+
+<file path="src/contexts/AuthContext.tsx">
+// File: src/contexts/AuthContext.tsx
+
+'use client';
+
+import React, { createContext, useContext, useEffect, useState } from 'react';
+import { User, Session } from '@supabase/supabase-js';
+import { supabase } from '@/lib/supabase';
+
+interface AuthContextType {
+  user: User | null;
+  session: Session | null;
+  loading: boolean;
+  signUp: (email: string, password: string, firstName: string, lastName: string, username: string) => Promise<any>;
+  signIn: (email: string, password: string) => Promise<any>;
+  signOut: () => Promise<void>;
+  resetPassword: (email: string) => Promise<any>;
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      setLoading(false);
+    });
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+        setLoading(false);
+      }
+    );
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const signUp = async (email: string, password: string, firstName: string, lastName: string, username: string) => {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          first_name: firstName,
+          last_name: lastName,
+          username: username,
+          full_name: `${firstName} ${lastName}`
+        }
+      }
+    });
+    return { data, error };
+  };
+
+  const signIn = async (email: string, password: string) => {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password
+    });
+    return { data, error };
+  };
+
+  const signOut = async () => {
+    await supabase.auth.signOut();
+  };
+
+  const resetPassword = async (email: string) => {
+    const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`
+    });
+    return { data, error };
+  };
+
+  const value = {
+    user,
+    session,
+    loading,
+    signUp,
+    signIn,
+    signOut,
+    resetPassword
+  };
+
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+export function useAuth() {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+}
+</file>
+
+<file path="src/data/problem.ts">
+// File: src/data/problem.ts
+
+export const problems = [
+  {
+    id: 1,
+    slug: 'two-sum',
+    title: 'Two Sum',
+    difficulty: 'Easy',
+    completed: false,
+    description: 'Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target.\n\nYou may assume that each input would have exactly one solution, and you may not use the same element twice.\n\nYou can return the answer in any order.',
+    exampleInput: 'nums = [2,7,11,15], target = 9',
+    exampleOutput: '[0,1]',
+    starterCode: `class Solution {
+public:
+    vector<int> twoSum(vector<int>& nums, int target) {
+        // your code here
+    }
+};`,
+  },
+  {
+    id: 2,
+    slug: 'contains-duplicate',
+    title: 'Contains Duplicate',
+    difficulty: 'Easy',
+    completed: false,
+    description: 'Given an integer array nums, return true if any value appears at least twice in the array, and return false if every element is distinct.',
+    exampleInput: 'nums = [1,2,3,1]',
+    exampleOutput: 'true',
+    starterCode: `class Solution {
+public:
+    bool containsDuplicate(vector<int>& nums) {
+        // your code here
+    }
+};`,
+  },
+  {
+    id: 3,
+    slug: 'valid-anagram',
+    title: 'Valid Anagram',
+    difficulty: 'Easy',
+    completed: false,
+    description: 'Given two strings s and t, return true if t is an anagram of s, and false otherwise.\n\nAn Anagram is a word or phrase formed by rearranging the letters of a different word or phrase, typically using all the original letters exactly once.',
+    exampleInput: 's = "anagram", t = "nagaram"',
+    exampleOutput: 'true',
+    starterCode: `class Solution {
+public:
+    bool isAnagram(string s, string t) {
+        // your code here
+    }
+};`,
+  },
+  {
+    id: 4,
+    slug: 'group-anagrams',
+    title: 'Group Anagrams',
+    difficulty: 'Medium',
+    completed: false,
+    description: 'Given an array of strings strs, group the anagrams together. You can return the answer in any order.',
+    exampleInput: 'strs = ["eat","tea","tan","ate","nat","bat"]',
+    exampleOutput: '[["bat"],["nat","tan"],["ate","eat","tea"]]',
+    starterCode: `class Solution {
+public:
+    vector<vector<string>> groupAnagrams(vector<string>& strs) {
+        // your code here
+    }
+};`,
+  },
+  {
+    id: 5,
+    slug: 'top-k-frequent-elements',
+    title: 'Top K Frequent Elements',
+    difficulty: 'Medium',
+    completed: false,
+    description: 'Given an integer array nums and an integer k, return the k most frequent elements.',
+    exampleInput: 'nums = [1,1,1,2,2,3], k = 2',
+    exampleOutput: '[1,2]',
+    starterCode: `class Solution {
+public:
+    vector<int> topKFrequent(vector<int>& nums, int k) {
+        // your code here
+    }
+};`,
+  },
+  {
+    id: 6,
+    slug: 'product-of-array-except-self',
+    title: 'Product of Array Except Self',
+    difficulty: 'Medium',
+    completed: false,
+    description: 'Given an integer array nums, return an array answer such that answer[i] is equal to the product of all the elements of nums except nums[i].',
+    exampleInput: 'nums = [1,2,3,4]',
+    exampleOutput: '[24,12,8,6]',
+    starterCode: `class Solution {
+public:
+    vector<int> productExceptSelf(vector<int>& nums) {
+        // your code here
+    }
+};`,
+  },
+  {
+    id: 7,
+    slug: 'valid-sudoku',
+    title: 'Valid Sudoku',
+    difficulty: 'Medium',
+    completed: false,
+    description: 'Determine if a 9 x 9 Sudoku board is valid. Only the filled cells need to be validated.',
+    exampleInput: 'board = [["5","3",".",".","7",".",".",".","."], ...]',
+    exampleOutput: 'true',
+    starterCode: `class Solution {
+public:
+    bool isValidSudoku(vector<vector<char>>& board) {
+        // your code here
+    }
+};`,
+  },
+  {
+    id: 8,
+    slug: 'longest-consecutive-sequence',
+    title: 'Longest Consecutive Sequence',
+    difficulty: 'Medium',
+    completed: false,
+    description: 'Given an unsorted array of integers nums, return the length of the longest consecutive elements sequence.',
+    exampleInput: 'nums = [100,4,200,1,3,2]',
+    exampleOutput: '4',
+    starterCode: `class Solution {
+public:
+    int longestConsecutive(vector<int>& nums) {
+        // your code here
+    }
+};`,
+  },
+  {
+    id: 9,
+    slug: 'trapping-rain-water',
+    title: 'Trapping Rain Water',
+    difficulty: 'Hard',
+    completed: false,
+    description: 'Given n non-negative integers representing an elevation map, compute how much water it can trap after raining.',
+    exampleInput: 'height = [0,1,0,2,1,0,1,3,2,1,2,1]',
+    exampleOutput: '6',
+    starterCode: `class Solution {
+public:
+    int trap(vector<int>& height) {
+        // your code here
+    }
+};`,
+  },
+
+  {
+    id: 10,
+    slug: 'valid-palindrome',
+    title: 'Valid Palindrome',
+    difficulty: 'Easy',
+    completed: false,
+    description: 'Given a string s, determine if it is a palindrome, considering only alphanumeric characters and ignoring cases.',
+    exampleInput: 's = "A man, a plan, a canal: Panama"',
+    exampleOutput: 'true',
+    starterCode: `class Solution {
+public:
+    bool isPalindrome(string s) {
+        // your code here
+    }
+};`,
+  },
+  {
+    id: 11,
+    slug: 'two-sum-ii-input-array-is-sorted',
+    title: 'Two Sum II - Input Array Is Sorted',
+    difficulty: 'Medium',
+    completed: false,
+    description: 'Given a 1-indexed array of integers numbers that is already sorted in non-decreasing order, find two numbers that add up to a target number.',
+    exampleInput: 'numbers = [2,7,11,15], target = 9',
+    exampleOutput: '[1,2]',
+    starterCode: `class Solution {
+public:
+    vector<int> twoSum(vector<int>& numbers, int target) {
+        // your code here
+    }
+};`,
+  },
+  {
+    id: 12,
+    slug: '3sum',
+    title: '3Sum',
+    difficulty: 'Medium',
+    completed: false,
+    description: 'Given an integer array nums, return all the triplets [nums[i], nums[j], nums[k]] such that i ≠ j, i ≠ k, and j ≠ k, and nums[i] + nums[j] + nums[k] == 0.',
+    exampleInput: 'nums = [-1,0,1,2,-1,-4]',
+    exampleOutput: '[[-1,-1,2],[-1,0,1]]',
+    starterCode: `class Solution {
+public:
+    vector<vector<int>> threeSum(vector<int>& nums) {
+        // your code here
+    }
+};`,
+  },
+  {
+    id: 13,
+    slug: 'container-with-most-water',
+    title: 'Container With Most Water',
+    difficulty: 'Medium',
+    completed: false,
+    description: 'Given n non-negative integers a1, a2, ..., an , where each represents a point at coordinate (i, ai). n vertical lines are drawn such that the two endpoints of the line i is at (i, ai) and (i, 0). Find two lines which together with the x-axis forms a container, such that the container contains the most water.',
+    exampleInput: 'height = [1,8,6,2,5,4,8,3,7]',
+    exampleOutput: '49',
+    starterCode: `class Solution {
+public:
+    int maxArea(vector<int>& height) {
+        // your code here
+    }
+};`,
+  },
+  {
+    id: 14,
+    slug: 'trapping-rain-water',
+    title: 'Trapping Rain Water',
+    difficulty: 'Hard',
+    completed: false,
+    description: 'Given n non-negative integers representing an elevation map where the width of each bar is 1, compute how much water it can trap after raining.',
+    exampleInput: 'height = [0,1,0,2,1,0,1,3,2,1,2,1]',
+    exampleOutput: '6',
+    starterCode: `class Solution {
+public:
+    int trap(vector<int>& height) {
+        // your code here
+    }
+};`,
+  },
+  {
+    id: 15,
+    slug: 'best-time-to-buy-and-sell-stock',
+    title: 'Best Time to Buy and Sell Stock',
+    difficulty: 'Easy',
+    completed: false,
+    description: 'You are given an array prices where prices[i] is the price of a given stock on the ith day. Return the maximum profit you can achieve.',
+    exampleInput: 'prices = [7,1,5,3,6,4]',
+    exampleOutput: '5',
+    starterCode: `class Solution {
+public:
+    int maxProfit(vector<int>& prices) {
+        // your code here
+    }
+};`,
+  },
+  {
+    id: 16,
+    slug: 'longest-substring-without-repeating-characters',
+    title: 'Longest Substring Without Repeating Characters',
+    difficulty: 'Medium',
+    completed: false,
+    description: 'Given a string s, find the length of the longest substring without repeating characters.',
+    exampleInput: 's = "abcabcbb"',
+    exampleOutput: '3',
+    starterCode: `class Solution {
+public:
+    int lengthOfLongestSubstring(string s) {
+        // your code here
+    }
+};`,
+  },
+  {
+    id: 17,
+    slug: 'longest-repeating-character-replacement',
+    title: 'Longest Repeating Character Replacement',
+    difficulty: 'Medium',
+    completed: false,
+    description: 'You are given a string s and an integer k. Return the length of the longest substring containing the same letter you can get after performing at most k character replacements.',
+    exampleInput: 's = "ABAB", k = 2',
+    exampleOutput: '4',
+    starterCode: `class Solution {
+public:
+    int characterReplacement(string s, int k) {
+        // your code here
+    }
+};`,
+  },
+  {
+    id: 18,
+    slug: 'permutation-in-string',
+    title: 'Permutation in String',
+    difficulty: 'Medium',
+    completed: false,
+    description: 'Given two strings s1 and s2, return true if s2 contains a permutation of s1.',
+    exampleInput: 's1 = "ab", s2 = "eidbaooo"',
+    exampleOutput: 'true',
+    starterCode: `class Solution {
+public:
+    bool checkInclusion(string s1, string s2) {
+        // your code here
+    }
+};`,
+  },
+  {
+    id: 19,
+    slug: 'minimum-window-substring',
+    title: 'Minimum Window Substring',
+    difficulty: 'Hard',
+    completed: false,
+    description: 'Given two strings s and t, return the minimum window in s which will contain all the characters in t.',
+    exampleInput: 's = "ADOBECODEBANC", t = "ABC"',
+    exampleOutput: '"BANC"',
+    starterCode: `class Solution {
+public:
+    string minWindow(string s, string t) {
+        // your code here
+    }
+};`,
+  },
+  {
+    id: 20,
+    slug: 'sliding-window-maximum',
+    title: 'Sliding Window Maximum',
+    difficulty: 'Hard',
+    completed: false,
+    description: 'You are given an array of integers nums, there is a sliding window of size k which is moving from the very left of the array to the very right. You need to return the max sliding window.',
+    exampleInput: 'nums = [1,3,-1,-3,5,3,6,7], k = 3',
+    exampleOutput: '[3,3,5,5,6,7]',
+    starterCode: `class Solution {
+public:
+    vector<int> maxSlidingWindow(vector<int>& nums, int k) {
+        // your code here
+    }
+};`,
+  },
+
+];
+</file>
+
+<file path="src/lib/supabase.ts">
+// File: src/lib/supabase.ts
+
+import { createClient } from '@supabase/supabase-js'
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: true
+  }
+})
+</file>
+
+<file path="tsconfig.json">
+//tsconfig.json
+{
+  "compilerOptions": {
+    "target": "ES2017",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "preserve",
+    "incremental": true,
+    "baseUrl": "./src",
+    "paths": {
+      "@/*": ["*"]
+    },
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ]
+  },
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  "exclude": ["node_modules"]
+}
+</file>
+
+</files>
