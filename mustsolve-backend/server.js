@@ -160,6 +160,23 @@ class TestRunner {
     }
 }`;
   }
+else if (problemType === 'contains-duplicate') {
+  javaRunner = `
+  class TestRunner {
+      public static void main(String[] args) {
+          Solution solution = new Solution();
+          int[] nums = {${testCase.nums.join(',')}};
+          
+          try {
+              boolean result = solution.containsDuplicate(nums);
+              System.out.println(result);
+          } catch (Exception e) {
+              System.err.println("Runtime Error: " + e.getMessage());
+              e.printStackTrace();
+          }
+      }
+  }`;
+}
   
   const runnerFile = path.join(TEMP_DIR, `TestRunner.java`);
   const runnerClass = path.join(TEMP_DIR, `TestRunner.class`);
@@ -196,6 +213,9 @@ class TestRunner {
     const actual = actualOutput.replace(/\s/g, ''); // Remove spaces
     success = actual === expected.replace(/\s/g, '');
     } else if (problemType === 'valid-anagram') {
+      const expected = testCase.expected.toString();
+      success = actualOutput === expected;
+    } else if (problemType === 'contains-duplicate') {
       const expected = testCase.expected.toString();
       success = actualOutput === expected;
     }

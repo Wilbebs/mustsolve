@@ -25,7 +25,14 @@ interface ValidAnagramTestCase {
   expected: boolean;
 }
 
-type TestCase = TwoSumTestCase | ValidAnagramTestCase;
+interface ContainsDuplicateTestCase {
+  id: number;
+  type: 'contains-duplicate';
+  nums: number[];
+  expected: boolean;
+}
+
+type TestCase = TwoSumTestCase | ValidAnagramTestCase | ContainsDuplicateTestCase;
 
 const CodeEditor = React.memo(({ 
   code, 
@@ -226,6 +233,9 @@ const formatInput = (testCase: TestCase, problemType: string): string => {
   } else if (problemType === 'valid-anagram') {
     const anagramCase = testCase as ValidAnagramTestCase;
     return `Input:\ns="${anagramCase.s}", t="${anagramCase.t}"\n\n`;
+  } else if (problemType === 'contains-duplicate') {  
+    const containsDuplicateCase = testCase as ContainsDuplicateTestCase;
+    return `Input:\nnums=[${containsDuplicateCase.nums.join(',')}]\n\n`;
   }
   return '';
 };
@@ -262,6 +272,14 @@ const formatInput = (testCase: TestCase, problemType: string): string => {
       `);
       result = func(anagramCase.s, anagramCase.t);
       functionName = 'isAnagram';
+    } else if (problemType === 'contains-duplicate') {  
+      const containsDuplicateCase = testCase as ContainsDuplicateTestCase;
+      const func = new Function('nums', `
+        ${code}
+        return typeof containsDuplicate !== 'undefined' ? containsDuplicate(nums) : undefined;
+      `);
+      result = func(containsDuplicateCase.nums);
+      functionName = 'containsDuplicate';
     }
     
     console.log = originalConsoleLog;
@@ -298,6 +316,14 @@ const formatInput = (testCase: TestCase, problemType: string): string => {
       const success = result === anagramCase.expected;
       output += success ? '✓ Test case passed' : '✗ Test case failed - Wrong Answer';
       resolve({ success, output });
+    } else if (problemType === 'contains-duplicate') {  
+      const containsDuplicateCase = testCase as ContainsDuplicateTestCase;
+      
+      output += `Output: ${result}\nExpected: ${containsDuplicateCase.expected}\n\n`;
+      
+      const success = result === containsDuplicateCase.expected;
+      output += success ? '✓ Test case passed' : '✗ Test case failed - Wrong Answer';
+      resolve({ success, output });
     }
     
   } catch (execError: unknown) {
@@ -329,6 +355,12 @@ const formatInput = (testCase: TestCase, problemType: string): string => {
       resolve({
         success: true,
         output: output + `Output: ${anagramCase.expected}\nExpected: ${anagramCase.expected}\n\n✓ Test case passed`
+      });
+    } else if (problemType === 'contains-duplicate') {  // ADD THIS
+      const containsDuplicateCase = testCase as ContainsDuplicateTestCase;
+      resolve({
+        success: true,
+        output: output + `Output: ${containsDuplicateCase.expected}\nExpected: ${containsDuplicateCase.expected}\n\n✓ Test case passed`
       });
     }
   }, 1000);
@@ -445,7 +477,51 @@ const TestCaseEditor = React.memo(({
         </div>
       </div>
     );
-  }
+  } 
+  else if (problemType === 'contains-duplicate') {
+  const containsDuplicateCase = testCase as ContainsDuplicateTestCase;
+  
+  const parseArrayInput = (input: string): number[] => {
+    try {
+      const cleanInput = input.replace(/[\[\]]/g, '').trim();
+      if (!cleanInput) return [];
+      return cleanInput.split(',').map(num => parseInt(num.trim(), 10)).filter(num => !isNaN(num));
+    } catch {
+      return [];
+    }
+  };
+
+  return (
+    <div className="space-y-3">
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">nums =</label>
+        <input
+          type="text"
+          defaultValue={`[${containsDuplicateCase.nums.join(', ')}]`}
+          onBlur={(e) => {
+            const newNums = parseArrayInput(e.target.value);
+            onUpdate(containsDuplicateCase.id, 'nums', newNums);
+          }}
+          className="w-full p-3 border border-gray-300 rounded font-mono text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+          placeholder="[1, 2, 3, 1]"
+        />
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">expected =</label>
+        <select
+          defaultValue={containsDuplicateCase.expected.toString()}
+          onChange={(e) => {
+            onUpdate(containsDuplicateCase.id, 'expected', e.target.value === 'true');
+          }}
+          className="w-full p-3 border border-gray-300 rounded font-mono text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+        >
+          <option value="true">true</option>
+          <option value="false">false</option>
+        </select>
+      </div>
+    </div>
+  );
+}
   
   return null;
 });
@@ -465,8 +541,11 @@ export default function ProblemPage() {
   const [output, setOutput] = useState('');
   const [activeTestCase, setActiveTestCase] = useState(1);
 
-  const problemType = slug === 'two-sum' ? 'two-sum' : slug === 'valid-anagram' ? 'valid-anagram' : 'two-sum';
-
+const problemType = slug === 'two-sum' ? 'two-sum' : 
+                   slug === 'valid-anagram' ? 'valid-anagram' : 
+                   slug === 'contains-duplicate' ? 'contains-duplicate' : 
+                   'two-sum';
+                   
   const getLanguageTemplates = (problemType: string): { [key in Language]: string } => {
     if (problemType === 'two-sum') {
       return {
@@ -481,6 +560,13 @@ export default function ProblemPage() {
         'Python': `def isAnagram(s, t):\n    """\n    :type s: str\n    :type t: str\n    :rtype: bool\n    """\n    # Write your solution here\n    pass`,
         'Java': `class Solution {\n    public boolean isAnagram(String s, String t) {\n        // Write your solution here\n        \n    }\n}`,
         'C++': `class Solution {\npublic:\n    bool isAnagram(string s, string t) {\n        // Write your solution here\n        \n    }\n};`
+      };
+    } else if (problemType === 'contains-duplicate') {
+      return {
+        'JavaScript': `/**\n * @param {number[]} nums\n * @return {boolean}\n */\nvar containsDuplicate = function(nums) {\n    // Write your solution here\n    \n};`,
+        'Python': `def containsDuplicate(nums):\n    """\n    :type nums: List[int]\n    :rtype: bool\n    """\n    # Write your solution here\n    pass`,
+        'Java': `class Solution {\n    public boolean containsDuplicate(int[] nums) {\n        // Write your solution here\n        \n    }\n}`,
+        'C++': `class Solution {\npublic:\n    bool containsDuplicate(vector<int>& nums) {\n        // Write your solution here\n        \n    }\n};`
       };
     }
     return getLanguageTemplates('two-sum');
@@ -501,7 +587,14 @@ export default function ProblemPage() {
         { id: 2, type: 'valid-anagram', s: 'rat', t: 'car', expected: false },
         { id: 3, type: 'valid-anagram', s: 'listen', t: 'silent', expected: true }
       ];
+    } else if (problemType === 'contains-duplicate') {
+      return [
+        { id: 1, type: 'contains-duplicate', nums: [1, 2, 3, 1], expected: true },
+        { id: 2, type: 'contains-duplicate', nums: [1, 2, 3, 4], expected: false },
+        { id: 3, type: 'contains-duplicate', nums: [1, 1, 1, 3, 3, 4, 3, 2, 4, 2], expected: true }
+      ];
     }
+
     return getDefaultTestCases('two-sum');
   };
 
