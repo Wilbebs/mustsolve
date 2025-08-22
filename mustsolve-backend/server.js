@@ -1,5 +1,4 @@
-// backend/server.js - Node.js + Express Backend for Java Execution
-
+// mustsolve-backend/server.js - Enhanced with Database Integration
 const express = require('express');
 const fs = require('fs').promises;
 const path = require('path');
@@ -8,19 +7,26 @@ const { promisify } = require('util');
 const crypto = require('crypto');
 const cors = require('cors');
 const os = require('os');
+require('dotenv').config();
+
+// Import database service
+const db = require('./src/services/database');
 
 const execAsync = promisify(exec);
 const app = express();
 const PORT = process.env.PORT || 3001;
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  credentials: true
+}));
 app.use(express.json({ limit: '10mb' }));
 
-// Security settings
-const EXECUTION_TIMEOUT = 5000; // 5 seconds
-const TEMP_DIR = path.join(os.tmpdir(), 'java_execution'); // Windows-compatible temp directory
-const MAX_OUTPUT_SIZE = 10000; // 10KB max output
+// Security settings for Java execution
+const EXECUTION_TIMEOUT = 5000;
+const TEMP_DIR = path.join(os.tmpdir(), 'java_execution');
+const MAX_OUTPUT_SIZE = 10000;
 
 // Ensure temp directory exists
 async function ensureTempDir() {
@@ -31,7 +37,7 @@ async function ensureTempDir() {
   }
 }
 
-// Clean up old files (run periodically)
+// Clean up old files
 async function cleanupOldFiles() {
   try {
     const files = await fs.readdir(TEMP_DIR);
@@ -41,7 +47,6 @@ async function cleanupOldFiles() {
       const filePath = path.join(TEMP_DIR, file);
       const stats = await fs.stat(filePath);
       
-      // Delete files older than 1 hour
       if (now - stats.mtime.getTime() > 3600000) {
         await fs.unlink(filePath);
       }
@@ -51,18 +56,141 @@ async function cleanupOldFiles() {
   }
 }
 
+// Health check endpoint
+app.get('/api/health', async (req, res) => {
+  try {
+    const isDbConnected = await db.testConnection();
+    res.status(200).json({
+      status: 'OK',
+      timestamp: new Date().toISOString(),
+      database: isDbConnected ? 'Connected' : 'Disconnected',
+      version: '1.0.0',
+      javaVersion: process.env.JAVA_VERSION || 'detected automatically'
+    });
+  } catch (error) {
+    res.status(503).json({
+      status: 'Error',
+      timestamp: new Date().toISOString(),
+      database: 'Error',
+      error: error.message
+    });
+  }
+});
+
+// =============================================================================
+// DATABASE API ENDPOINTS
+// =============================================================================
+
+// GET /api/problems - Get all problems (list view)
+app.get('/api/problems', async (req, res) => {
+  try {
+    const { category, difficulty, search } = req.query;
+    
+    let problems;
+    
+    if (search) {
+      problems = await db.searchProblems(search);
+    } else if (category) {
+      problems = await db.getProblemsByCategory(category);
+    } else if (difficulty) {
+      problems = await db.getProblemsByDifficulty(difficulty);
+    } else {
+      problems = await db.getAllProblems();
+    }
+    
+    res.status(200).json({
+      success: true,
+      data: problems,
+      total: problems.length
+    });
+  } catch (error) {
+    console.error('Error fetching problems:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch problems',
+      error: error.message
+    });
+  }
+});
+
+// GET /api/problems/:slug - Get specific problem by slug
+app.get('/api/problems/:slug', async (req, res) => {
+  try {
+    const { slug } = req.params;
+    const problem = await db.getProblemBySlug(slug);
+    
+    if (!problem) {
+      return res.status(404).json({
+        success: false,
+        message: 'Problem not found'
+      });
+    }
+    
+    res.status(200).json({
+      success: true,
+      data: problem
+    });
+  } catch (error) {
+    console.error('Error fetching problem:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch problem',
+      error: error.message
+    });
+  }
+});
+
+// GET /api/categories - Get all categories with problem counts
+app.get('/api/categories', async (req, res) => {
+  try {
+    const categories = await db.getAllCategories();
+    
+    res.status(200).json({
+      success: true,
+      data: categories
+    });
+  } catch (error) {
+    console.error('Error fetching categories:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch categories',
+      error: error.message
+    });
+  }
+});
+
+// GET /api/stats - Get dashboard statistics
+app.get('/api/stats', async (req, res) => {
+  try {
+    const stats = await db.getDashboardStats();
+    
+    res.status(200).json({
+      success: true,
+      data: stats
+    });
+  } catch (error) {
+    console.error('Error fetching stats:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch statistics',
+      error: error.message
+    });
+  }
+});
+
+// =============================================================================
+// JAVA CODE EXECUTION (existing functionality)
+// =============================================================================
+
 // Execute Java code safely
 async function executeJavaCode(code, testCases, problemType) {
   const sessionId = crypto.randomUUID();
-  const className = 'Solution';
   const javaFile = path.join(TEMP_DIR, `${sessionId}.java`);
   const classFile = path.join(TEMP_DIR, `${sessionId}.class`);
   
   try {
-    // Write Java code to file
     await fs.writeFile(javaFile, code);
     
-    // Compile Java code
     const compileCmd = `javac -cp "${TEMP_DIR}" "${javaFile}"`;
     
     try {
@@ -86,7 +214,6 @@ async function executeJavaCode(code, testCases, problemType) {
       };
     }
     
-    // Execute test cases
     const results = [];
     
     for (const testCase of testCases) {
@@ -105,7 +232,6 @@ async function executeJavaCode(code, testCases, problemType) {
     return { results };
     
   } finally {
-    // Cleanup files
     try {
       await fs.unlink(javaFile).catch(() => {});
       await fs.unlink(classFile).catch(() => {});
@@ -116,12 +242,11 @@ async function executeJavaCode(code, testCases, problemType) {
 }
 
 // Execute individual test case
-// Execute individual test case
 async function executeTestCase(sessionId, testCase, problemType) {
   let javaRunner;
   
-if (problemType === 'two-sum') {
-  javaRunner = `
+  if (problemType === 'two-sum') {
+    javaRunner = `
 class TestRunner {
     public static void main(String[] args) {
         Solution solution = new Solution();
@@ -142,7 +267,7 @@ class TestRunner {
         }
     }
 }`;
-} else if (problemType === 'valid-anagram') {
+  } else if (problemType === 'valid-anagram') {
     javaRunner = `
 class TestRunner {
     public static void main(String[] args) {
@@ -159,36 +284,33 @@ class TestRunner {
         }
     }
 }`;
+  } else if (problemType === 'contains-duplicate') {
+    javaRunner = `
+class TestRunner {
+    public static void main(String[] args) {
+        Solution solution = new Solution();
+        int[] nums = {${testCase.nums.join(',')}};
+        
+        try {
+            boolean result = solution.containsDuplicate(nums);
+            System.out.println(result);
+        } catch (Exception e) {
+            System.err.println("Runtime Error: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+}`;
   }
-else if (problemType === 'contains-duplicate') {
-  javaRunner = `
-  class TestRunner {
-      public static void main(String[] args) {
-          Solution solution = new Solution();
-          int[] nums = {${testCase.nums.join(',')}};
-          
-          try {
-              boolean result = solution.containsDuplicate(nums);
-              System.out.println(result);
-          } catch (Exception e) {
-              System.err.println("Runtime Error: " + e.getMessage());
-              e.printStackTrace();
-          }
-      }
-  }`;
-}
   
   const runnerFile = path.join(TEMP_DIR, `TestRunner.java`);
   const runnerClass = path.join(TEMP_DIR, `TestRunner.class`);
   
   try {
-    // Write and compile test runner
     await fs.writeFile(runnerFile, javaRunner);
     
     const compileCmd = `javac -cp "${TEMP_DIR}" "${runnerFile}"`;
     await execAsync(compileCmd, { timeout: EXECUTION_TIMEOUT });
     
-    // Execute test
     const executeCmd = `java -cp "${TEMP_DIR}" TestRunner`;
     const { stdout, stderr } = await execAsync(executeCmd, {
       timeout: EXECUTION_TIMEOUT,
@@ -207,11 +329,10 @@ else if (problemType === 'contains-duplicate') {
     const actualOutput = stdout.trim();
     let success = false;
     
-    // Compare results
-   if (problemType === 'two-sum') {
-    const expected = JSON.stringify(testCase.expected);
-    const actual = actualOutput.replace(/\s/g, ''); // Remove spaces
-    success = actual === expected.replace(/\s/g, '');
+    if (problemType === 'two-sum') {
+      const expected = JSON.stringify(testCase.expected);
+      const actual = actualOutput.replace(/\s/g, '');
+      success = actual === expected.replace(/\s/g, '');
     } else if (problemType === 'valid-anagram') {
       const expected = testCase.expected.toString();
       success = actualOutput === expected;
@@ -230,7 +351,6 @@ else if (problemType === 'contains-duplicate') {
     };
     
   } finally {
-    // Cleanup runner files
     try {
       await fs.unlink(runnerFile).catch(() => {});
       await fs.unlink(runnerClass).catch(() => {});
@@ -240,12 +360,11 @@ else if (problemType === 'contains-duplicate') {
   }
 }
 
-// API endpoint for code execution
+// POST /api/execute-java - Execute Java code (existing endpoint)
 app.post('/api/execute-java', async (req, res) => {
   try {
     const { code, testCases, problemType } = req.body;
     
-    // Validation
     if (!code || !testCases || !problemType) {
       return res.status(400).json({
         error: 'Missing required fields: code, testCases, problemType'
@@ -277,27 +396,98 @@ app.post('/api/execute-java', async (req, res) => {
   }
 });
 
-// Health check endpoint
-app.get('/api/health', (req, res) => {
-  res.json({ 
-    status: 'ok', 
-    timestamp: new Date().toISOString(),
-    javaVersion: process.env.JAVA_VERSION || 'detected automatically'
+// POST /api/problems/:slug/submit - Submit solution (placeholder for future)
+app.post('/api/problems/:slug/submit', async (req, res) => {
+  try {
+    const { slug } = req.params;
+    const { language, code } = req.body;
+    
+    // Placeholder for code execution and testing logic
+    
+    res.status(200).json({
+      success: true,
+      message: 'Solution submitted successfully',
+      data: {
+        slug,
+        language,
+        status: 'pending',
+        executionTime: null,
+        memoryUsed: null,
+        testsPassed: null,
+        totalTests: null
+      }
+    });
+  } catch (error) {
+    console.error('Error submitting solution:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to submit solution',
+      error: error.message
+    });
+  }
+});
+
+// Catch-all route for undefined API endpoints
+app.use('/api/*', (req, res) => {
+  res.status(404).json({
+    success: false,
+    message: 'API endpoint not found',
+    path: req.path
+  });
+});
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error('Unhandled error:', err);
+  res.status(500).json({
+    success: false,
+    message: 'Internal server error',
+    error: process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong'
   });
 });
 
 // Start server
-async function startServer() {
-  await ensureTempDir();
-  
-  // Cleanup old files every hour
-  setInterval(cleanupOldFiles, 3600000);
-  
-  app.listen(PORT, () => {
-    console.log(`🚀 Java execution server running on port ${PORT}`);
-    console.log(`📁 Temp directory: ${TEMP_DIR}`);
-    console.log(`⏱️  Execution timeout: ${EXECUTION_TIMEOUT}ms`);
-  });
-}
+const startServer = async () => {
+  try {
+    // Test database connection
+    console.log('🔌 Testing database connection...');
+    const isConnected = await db.testConnection();
+    
+    if (!isConnected) {
+      console.error('❌ Database connection failed. Check your environment variables.');
+      process.exit(1);
+    }
+    
+    // Ensure temp directory for Java execution
+    await ensureTempDir();
+    
+    // Cleanup old files every hour
+    setInterval(cleanupOldFiles, 3600000);
+    
+    app.listen(PORT, () => {
+      console.log(`🚀 MustSolve Backend running on port ${PORT}`);
+      console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
+      console.log(`🔗 API Base: http://localhost:${PORT}/api`);
+      console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+      console.log(`📁 Java temp directory: ${TEMP_DIR}`);
+    });
+  } catch (error) {
+    console.error('Failed to start server:', error);
+    process.exit(1);
+  }
+};
 
-startServer().catch(console.error);
+// Graceful shutdown
+process.on('SIGTERM', async () => {
+  console.log('SIGTERM received, shutting down gracefully...');
+  await db.closePool();
+  process.exit(0);
+});
+
+process.on('SIGINT', async () => {
+  console.log('SIGINT received, shutting down gracefully...');
+  await db.closePool();
+  process.exit(0);
+});
+
+startServer();
