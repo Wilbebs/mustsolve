@@ -1,14 +1,12 @@
-// File: src/contexts/AuthContext.tsx
+// File: src/contexts/AuthContext.tsx - Minimal version without Supabase
 
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { User, Session } from '@supabase/supabase-js';
-import { supabase } from '@/lib/supabase';
 
 interface AuthContextType {
-  user: User | null;
-  session: Session | null;
+  user: any | null;
+  session: any | null;
   loading: boolean;
   signUp: (email: string, password: string, firstName: string, lastName: string, username: string) => Promise<any>;
   signIn: (email: string, password: string) => Promise<any>;
@@ -19,63 +17,37 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<any | null>(null);
+  const [session, setSession] = useState<any | null>(null);
+  const [loading, setLoading] = useState(false); // Set to false since we're not loading anything
 
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        setLoading(false);
-      }
-    );
-
-    return () => subscription.unsubscribe();
+    // For now, just set loading to false
+    setLoading(false);
   }, []);
 
   const signUp = async (email: string, password: string, firstName: string, lastName: string, username: string) => {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          first_name: firstName,
-          last_name: lastName,
-          username: username,
-          full_name: `${firstName} ${lastName}`
-        }
-      }
-    });
-    return { data, error };
+    // Placeholder - return success for now
+    console.log('Sign up placeholder:', { email, firstName, lastName, username });
+    return { data: null, error: null };
   };
 
   const signIn = async (email: string, password: string) => {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password
-    });
-    return { data, error };
+    // Placeholder - return success for now
+    console.log('Sign in placeholder:', { email });
+    return { data: null, error: null };
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    setUser(null);
+    setSession(null);
+    console.log('Sign out placeholder');
   };
 
   const resetPassword = async (email: string) => {
-    const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`
-    });
-    return { data, error };
+    // Placeholder - return success for now
+    console.log('Reset password placeholder:', { email });
+    return { data: null, error: null };
   };
 
   const value = {

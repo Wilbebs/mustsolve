@@ -1,10 +1,11 @@
-// File: src/app/practice/page.tsx - Just remove locks, change nothing else
+// File: src/app/practice/page.tsx - Database-driven version
 
 'use client';
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
+import { usePracticeData } from '@/hooks/useApi';
 
 const PracticePage = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -13,140 +14,23 @@ const PracticePage = () => {
   const [selectedDifficulty, setSelectedDifficulty] = useState<string>('all');
   const [hoveredProblem, setHoveredProblem] = useState<number | null>(null);
 
+  // API data fetching
+  const filters = {
+    ...(selectedDifficulty !== 'all' && { difficulty: selectedDifficulty }),
+    ...(searchTerm && { search: searchTerm })
+  };
+
+  const { categories, stats, loading, error, refetch } = usePracticeData(filters);
+
   useEffect(() => {
     setIsVisible(true);
   }, []);
 
-  const problemCategories = [
-    {
-      id: 'arrays-hashing',
-      name: 'Arrays & Hashing',
-      total: 9,
-      completed: 1,
-      color: 'from-green-400 to-emerald-500',
-      problems: [
-        { id: 1, name: 'Two Sum', slug: 'two-sum', difficulty: 'Easy', completed: true, status: 'available' },
-        { id: 2, name: 'Contains Duplicate', difficulty: 'Easy', completed: false, status: 'available' },
-        { id: 3, name: 'Valid Anagram', difficulty: 'Easy', completed: false, status: 'available' },
-        { id: 4, name: 'Group Anagrams', difficulty: 'Medium', completed: false, status: 'available' },
-        { id: 5, name: 'Top K Frequent Elements', difficulty: 'Medium', completed: false, status: 'available' },
-        { id: 6, name: 'Product of Array Except Self', difficulty: 'Medium', completed: false, status: 'available' },
-        { id: 7, name: 'Valid Sudoku', difficulty: 'Medium', completed: false, status: 'available' },
-        { id: 8, name: 'Longest Consecutive Sequence', difficulty: 'Medium', completed: false, status: 'available' },
-        { id: 9, name: 'Trapping Rain Water', difficulty: 'Hard', completed: false, status: 'available' },
-      ]
-    },
-    {
-      id: 'two-pointers',
-      name: 'Two Pointers',
-      total: 5,
-      completed: 0,
-      color: 'from-blue-400 to-cyan-500',
-      problems: [
-        { id: 10, name: 'Valid Palindrome', difficulty: 'Easy', completed: false, status: 'available' },
-        { id: 11, name: 'Two Sum II - Input Array Is Sorted', difficulty: 'Medium', completed: false, status: 'available' },
-        { id: 12, name: '3Sum', difficulty: 'Medium', completed: false, status: 'available' },
-        { id: 13, name: 'Container With Most Water', difficulty: 'Medium', completed: false, status: 'available' },
-        { id: 14, name: 'Trapping Rain Water', difficulty: 'Hard', completed: false, status: 'available' },
-      ]
-    },
-    {
-      id: 'sliding-window',
-      name: 'Sliding Window',
-      total: 6,
-      completed: 0,
-      color: 'from-purple-400 to-pink-500',
-      problems: [
-        { id: 15, name: 'Best Time to Buy and Sell Stock', difficulty: 'Easy', completed: false, status: 'available' },
-        { id: 16, name: 'Longest Substring Without Repeating Characters', difficulty: 'Medium', completed: false, status: 'available' },
-        { id: 17, name: 'Longest Repeating Character Replacement', difficulty: 'Medium', completed: false, status: 'available' },
-        { id: 18, name: 'Permutation in String', difficulty: 'Medium', completed: false, status: 'available' },
-        { id: 19, name: 'Minimum Window Substring', difficulty: 'Hard', completed: false, status: 'available' },
-        { id: 20, name: 'Sliding Window Maximum', difficulty: 'Hard', completed: false, status: 'available' },
-      ]
-    },
-    {
-      id: 'stack',
-      name: 'Stack',
-      total: 7,
-      completed: 0,
-      color: 'from-orange-400 to-red-500',
-      problems: [
-        { id: 21, name: 'Valid Parentheses', difficulty: 'Easy', completed: false, status: 'available' },
-        { id: 22, name: 'Min Stack', difficulty: 'Medium', completed: false, status: 'available' },
-        { id: 23, name: 'Evaluate Reverse Polish Notation', difficulty: 'Medium', completed: false, status: 'available' },
-        { id: 24, name: 'Generate Parentheses', difficulty: 'Medium', completed: false, status: 'available' },
-        { id: 25, name: 'Daily Temperatures', difficulty: 'Medium', completed: false, status: 'available' },
-        { id: 26, name: 'Car Fleet', difficulty: 'Medium', completed: false, status: 'available' },
-        { id: 27, name: 'Largest Rectangle in Histogram', difficulty: 'Hard', completed: false, status: 'available' },
-      ]
-    },
-    {
-      id: 'binary-search',
-      name: 'Binary Search',
-      total: 7,
-      completed: 0,
-      color: 'from-indigo-400 to-purple-500',
-      problems: [
-        { id: 28, name: 'Binary Search', difficulty: 'Easy', completed: false, status: 'available' },
-        { id: 29, name: 'Search a 2D Matrix', difficulty: 'Medium', completed: false, status: 'available' },
-        { id: 30, name: 'Koko Eating Bananas', difficulty: 'Medium', completed: false, status: 'available' },
-        { id: 31, name: 'Find Minimum in Rotated Sorted Array', difficulty: 'Medium', completed: false, status: 'available' },
-        { id: 32, name: 'Search in Rotated Sorted Array', difficulty: 'Medium', completed: false, status: 'available' },
-        { id: 33, name: 'Time Based Key-Value Store', difficulty: 'Medium', completed: false, status: 'available' },
-        { id: 34, name: 'Median of Two Sorted Arrays', difficulty: 'Hard', completed: false, status: 'available' },
-      ]
-    },
-    {
-      id: 'linked-list',
-      name: 'Linked List',
-      total: 11,
-      completed: 0,
-      color: 'from-teal-400 to-cyan-500',
-      problems: [
-        { id: 35, name: 'Reverse Linked List', difficulty: 'Easy', completed: false, status: 'available' },
-        { id: 36, name: 'Merge Two Sorted Lists', difficulty: 'Easy', completed: false, status: 'available' },
-        { id: 37, name: 'Reorder List', difficulty: 'Medium', completed: false, status: 'available' },
-        { id: 38, name: 'Remove Nth Node From End of List', difficulty: 'Medium', completed: false, status: 'available' },
-        { id: 39, name: 'Copy List with Random Pointer', difficulty: 'Medium', completed: false, status: 'available' },
-        { id: 40, name: 'Add Two Numbers', difficulty: 'Medium', completed: false, status: 'available' },
-        { id: 41, name: 'Linked List Cycle', difficulty: 'Easy', completed: false, status: 'available' },
-        { id: 42, name: 'Find the Duplicate Number', difficulty: 'Medium', completed: false, status: 'available' },
-        { id: 43, name: 'LRU Cache', difficulty: 'Medium', completed: false, status: 'available' },
-        { id: 44, name: 'Merge k Sorted Lists', difficulty: 'Hard', completed: false, status: 'available' },
-        { id: 45, name: 'Reverse Nodes in k-Group', difficulty: 'Hard', completed: false, status: 'available' },
-      ]
-    },
-    {
-      id: 'trees',
-      name: 'Trees',
-      total: 15,
-      completed: 0,
-      color: 'from-yellow-400 to-orange-500',
-      problems: [
-        { id: 46, name: 'Invert Binary Tree', difficulty: 'Easy', completed: false, status: 'available' },
-        { id: 47, name: 'Maximum Depth of Binary Tree', difficulty: 'Easy', completed: false, status: 'available' },
-        { id: 48, name: 'Diameter of Binary Tree', difficulty: 'Easy', completed: false, status: 'available' },
-        { id: 49, name: 'Balanced Binary Tree', difficulty: 'Easy', completed: false, status: 'available' },
-        { id: 50, name: 'Same Tree', difficulty: 'Easy', completed: false, status: 'available' },
-        { id: 51, name: 'Subtree of Another Tree', difficulty: 'Easy', completed: false, status: 'available' },
-        { id: 52, name: 'Lowest Common Ancestor of a Binary Search Tree', difficulty: 'Medium', completed: false, status: 'available' },
-        { id: 53, name: 'Binary Tree Level Order Traversal', difficulty: 'Medium', completed: false, status: 'available' },
-        { id: 54, name: 'Binary Tree Right Side View', difficulty: 'Medium', completed: false, status: 'available' },
-        { id: 55, name: 'Count Good Nodes in Binary Tree', difficulty: 'Medium', completed: false, status: 'available' },
-        { id: 56, name: 'Validate Binary Search Tree', difficulty: 'Medium', completed: false, status: 'available' },
-        { id: 57, name: 'Kth Smallest Element in a BST', difficulty: 'Medium', completed: false, status: 'available' },
-        { id: 58, name: 'Construct Binary Tree from Preorder and Inorder Traversal', difficulty: 'Medium', completed: false, status: 'available' },
-        { id: 59, name: 'Binary Tree Maximum Path Sum', difficulty: 'Hard', completed: false, status: 'available' },
-        { id: 60, name: 'Serialize and Deserialize Binary Tree', difficulty: 'Hard', completed: false, status: 'available' },
-      ]
-    }
-  ];
-
-  const filteredCategories = problemCategories.filter(category =>
+  // Filter categories based on search
+  const filteredCategories = categories.filter(category =>
     category.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     category.problems.some(problem => 
-      problem.name.toLowerCase().includes(searchTerm.toLowerCase())
+      problem.title.toLowerCase().includes(searchTerm.toLowerCase())
     )
   );
 
@@ -167,11 +51,8 @@ const PracticePage = () => {
   };
 
   const getProgressPercentage = (completed: number, total: number) => {
+    if (total === 0) return 0;
     return (completed / total) * 100;
-  };
-
-  const getProblemSlug = (name: string) => {
-    return name.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '');
   };
 
   const containerVariants = {
@@ -204,21 +85,46 @@ const PracticePage = () => {
     }
   };
 
+  // Loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-800 to-black flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-green-400 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-green-400 text-lg">Loading problems from database...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-800 to-black flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-6xl mb-4">⚠️</div>
+          <h2 className="text-2xl font-bold text-white mb-2">Database Connection Error</h2>
+          <p className="text-gray-300 mb-4">Failed to load problems from the database.</p>
+          <p className="text-red-400 mb-6">{error}</p>
+          <button
+            onClick={refetch}
+            className="px-6 py-3 bg-green-500 text-black font-bold rounded-xl hover:bg-green-600 transition-colors"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-800 to-black relative overflow-hidden">
-      {/* NVIDIA-Style Geometric Background */}
+      {/* Background elements */}
       <div className="absolute inset-0">
-        {/* Animated geometric shapes */}
         <div className="absolute top-10 left-10 w-32 h-32 border border-green-400/30 rotate-45 animate-spin-slow"></div>
         <div className="absolute top-1/3 right-20 w-24 h-24 border-2 border-green-500/40 rounded-full animate-pulse"></div>
         <div className="absolute bottom-20 left-1/4 w-40 h-40 border border-green-300/20 rotate-12 animate-bounce-slow"></div>
         
-        {/* Floating geometric elements */}
-        <div className="absolute top-1/2 left-1/6 w-16 h-16 bg-green-400/10 rotate-45 animate-float"></div>
-        <div className="absolute top-1/4 right-1/3 w-20 h-20 border-2 border-green-500/30 rotate-45 animate-float-reverse"></div>
-        <div className="absolute bottom-1/3 right-20 w-12 h-12 bg-gradient-to-r from-green-400/20 to-emerald-400/20 rotate-45 animate-pulse"></div>
-        
-        {/* Grid pattern overlay */}
         <div className="absolute inset-0 opacity-5">
           <div className="w-full h-full" style={{
             backgroundImage: `
@@ -228,15 +134,6 @@ const PracticePage = () => {
             backgroundSize: '50px 50px'
           }}></div>
         </div>
-        
-        {/* Glowing orbs */}
-        <div className="absolute top-1/6 left-1/3 w-64 h-64 bg-gradient-radial from-green-400/20 via-green-500/10 to-transparent rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute top-2/3 right-1/4 w-96 h-96 bg-gradient-radial from-emerald-400/15 via-green-600/8 to-transparent rounded-full blur-3xl animate-pulse delay-1000"></div>
-        <div className="absolute top-1/2 left-1/2 w-32 h-32 bg-gradient-radial from-green-300/25 via-green-400/15 to-transparent rounded-full blur-2xl animate-bounce-slow"></div>
-        
-        {/* Hexagon shapes */}
-        <div className="absolute top-16 right-1/4 w-20 h-20 hexagon bg-green-400/10 animate-spin-slow"></div>
-        <div className="absolute bottom-32 left-1/3 w-16 h-16 hexagon bg-green-500/15 animate-spin-reverse"></div>
       </div>
 
       <div className="relative z-10 w-full px-8 py-8">
@@ -258,10 +155,10 @@ const PracticePage = () => {
                   Practice Problems
                 </h1>
                 <div className="text-2xl text-green-300 font-mono">
-                  Structured Learning Path
+                  Database-Driven Learning
                 </div>
                 <div className="text-lg text-gray-400 mt-2">
-                  Solve curated problems and track your progress
+                  Real problems from PostgreSQL database
                 </div>
               </div>
             </div>
@@ -285,7 +182,6 @@ const PracticePage = () => {
           <div className="max-w-4xl mx-auto">
             <div className="bg-black/60 backdrop-blur-sm rounded-2xl p-6 border border-green-500/30">
               <div className="flex flex-col md:flex-row gap-6">
-                {/* Search Bar */}
                 <div className="flex-1 relative">
                   <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                     <div className="h-5 w-5 text-gray-400">🔍</div>
@@ -299,7 +195,6 @@ const PracticePage = () => {
                   />
                 </div>
                 
-                {/* Difficulty Filter */}
                 <div className="md:w-48">
                   <select
                     value={selectedDifficulty}
@@ -337,7 +232,7 @@ const PracticePage = () => {
                 {/* Category Header */}
                 <div
                   className="flex items-center justify-between p-6 cursor-pointer hover:bg-gray-800/30 transition-colors"
-                  onClick={() => toggleCategory(category.id)}
+                  onClick={() => toggleCategory(category.id.toString())}
                 >
                   <div className="flex items-center space-x-4">
                     <div className="flex-shrink-0">
@@ -408,9 +303,9 @@ const PracticePage = () => {
                                 <div className="w-3 h-3 rounded-full bg-green-400"></div>
                               )}
                             </div>
-                            <Link href={`/problems/${getProblemSlug(problem.name)}`}>
+                            <Link href={`/problems/${problem.slug}`}>
                               <span className="text-white font-medium hover:text-green-400 transition-colors">
-                                {problem.name}
+                                {problem.title}
                               </span>
                             </Link>
                           </div>
@@ -445,28 +340,25 @@ const PracticePage = () => {
           {[
             { 
               title: "Problems Solved", 
-              value: problemCategories.reduce((sum, cat) => sum + cat.completed, 0),
+              value: categories.reduce((sum, cat) => sum + cat.completed, 0),
               icon: "🎯",
               color: "from-green-400 to-emerald-500"
             },
             { 
               title: "Total Problems", 
-              value: problemCategories.reduce((sum, cat) => sum + cat.total, 0),
+              value: stats.totalProblems,
               icon: "📚",
               color: "from-blue-400 to-cyan-500"
             },
             { 
-              title: "Completion Rate", 
-              value: `${Math.round(
-                (problemCategories.reduce((sum, cat) => sum + cat.completed, 0) /
-                 problemCategories.reduce((sum, cat) => sum + cat.total, 0)) * 100
-              )}%`,
-              icon: "📊",
-              color: "from-purple-400 to-pink-500"
+              title: "Easy Problems", 
+              value: stats.easyCount,
+              icon: "🟢",
+              color: "from-green-400 to-green-500"
             },
             { 
               title: "Categories", 
-              value: problemCategories.length,
+              value: stats.totalCategories,
               icon: "🗂️",
               color: "from-orange-400 to-red-500"
             }

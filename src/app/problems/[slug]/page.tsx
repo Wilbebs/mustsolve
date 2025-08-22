@@ -1,10 +1,12 @@
-// File: src/app/problems/[slug]/page.tsx
+// File: src/app/problems/[slug]/page.tsx - Fixed version without infinite loop
+
 'use client';
 
 import { useParams } from 'next/navigation';
-import { problems } from '@/data/problem';
 import React, { useState, useRef, useEffect } from 'react';
 import { Play, Maximize2, RotateCcw, ChevronDown } from 'lucide-react';
+import { useProblem, useCodeExecution } from '@/hooks/useApi';
+import ReactMarkdown from 'react-markdown';
 
 type Language = 'JavaScript' | 'Python' | 'Java' | 'C++';
 
@@ -157,215 +159,6 @@ const CodeEditor = React.memo(({
 
 CodeEditor.displayName = 'CodeEditor';
 
-// Simplified execution function - backend handles all the complexity now
-const executeCode = (code: string, language: Language, testCase: TestCase, problemType: string): Promise<{ success: boolean; output: string; error?: string }> => {
-  return new Promise(async (resolve) => {
-    try {
-      if (language === 'Java') {
-        // Real Java execution via backend
-        const response = await fetch('http://localhost:3001/api/execute-java', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            code,
-            testCases: [testCase],
-            problemType
-          })
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({ error: 'Network error' }));
-          resolve({
-            success: false,
-            output: '',
-            error: `Server Error\n\n${errorData.error || 'Failed to connect to execution server'}`
-          });
-          return;
-        }
-
-        const result = await response.json();
-        
-        if (result.error) {
-          resolve({ success: false, output: '', error: result.error });
-          return;
-        }
-
-        const testResult = result.results[0];
-        
-        let output = formatInput(testCase, problemType);
-        
-        if (testResult.error) {
-          resolve({ success: false, output: '', error: testResult.error });
-          return;
-        }
-        
-        output += `Your Output:\n\n${testResult.actualOutput}\n\n`;
-        output += `Expected output:\n\n${testResult.expectedOutput}`;
-        
-        resolve({
-          success: testResult.success,
-          output: output + (testResult.success ? '\n\n✅ Test case passed!' : '\n\n❌ Test case failed!')
-        });
-
-      } else if (language === 'JavaScript') {
-        // Client-side JavaScript execution
-        executeJavaScript(code, testCase, problemType, resolve);
-      } else {
-        // Placeholder for other languages
-        executeOtherLanguage(testCase, problemType, resolve);
-      }
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      resolve({
-        success: false,
-        output: '',
-        error: `Network Error\n\nFailed to connect to backend server. Make sure the backend is running on http://localhost:3001\n\nError: ${errorMessage}`
-      });
-    }
-  });
-};
-
-// Helper function to format input display
-const formatInput = (testCase: TestCase, problemType: string): string => {
-  if (problemType === 'two-sum') {
-    const twoSumCase = testCase as TwoSumTestCase;
-    return `Input:\nnums=[${twoSumCase.nums.join(',')}], target=${twoSumCase.target}\n\n`;
-  } else if (problemType === 'valid-anagram') {
-    const anagramCase = testCase as ValidAnagramTestCase;
-    return `Input:\ns="${anagramCase.s}", t="${anagramCase.t}"\n\n`;
-  } else if (problemType === 'contains-duplicate') {  
-    const containsDuplicateCase = testCase as ContainsDuplicateTestCase;
-    return `Input:\nnums=[${containsDuplicateCase.nums.join(',')}]\n\n`;
-  }
-  return '';
-};
-
-// Extracted JavaScript execution logic
-    const executeJavaScript = (
-      code: string, 
-      testCase: TestCase, 
-      problemType: string, 
-      resolve: (value: { success: boolean; output: string; error?: string }) => void
-    ) => {  try {
-    const consoleOutput: string[] = [];
-    const originalConsoleLog = console.log;
-    console.log = (...args) => {
-      consoleOutput.push(args.map(arg => String(arg)).join(' '));
-    };
-
-    let result: any;
-    let functionName: string = 'function';
-
-    if (problemType === 'two-sum') {
-      const twoSumCase = testCase as TwoSumTestCase;
-      const func = new Function('nums', 'target', `
-        ${code}
-        return typeof twoSum !== 'undefined' ? twoSum(nums, target) : undefined;
-      `);
-      result = func(twoSumCase.nums, twoSumCase.target);
-      functionName = 'twoSum';
-    } else if (problemType === 'valid-anagram') {
-      const anagramCase = testCase as ValidAnagramTestCase;
-      const func = new Function('s', 't', `
-        ${code}
-        return typeof isAnagram !== 'undefined' ? isAnagram(s, t) : undefined;
-      `);
-      result = func(anagramCase.s, anagramCase.t);
-      functionName = 'isAnagram';
-    } else if (problemType === 'contains-duplicate') {  
-      const containsDuplicateCase = testCase as ContainsDuplicateTestCase;
-      const func = new Function('nums', `
-        ${code}
-        return typeof containsDuplicate !== 'undefined' ? containsDuplicate(nums) : undefined;
-      `);
-      result = func(containsDuplicateCase.nums);
-      functionName = 'containsDuplicate';
-    }
-    
-    console.log = originalConsoleLog;
-    
-    let output = '';
-    
-    if (consoleOutput.length > 0) {
-      output += 'Console Output:\n' + consoleOutput.join('\n') + '\n\n';
-    }
-    
-    if (result === undefined) {
-      output += `No return value from ${functionName} function`;
-      resolve({ success: false, output: output });
-      return;
-    }
-    
-    output += formatInput(testCase, problemType);
-    
-    if (problemType === 'two-sum') {
-      const twoSumCase = testCase as TwoSumTestCase;
-      const resultStr = JSON.stringify(result);
-      const expectedStr = JSON.stringify(twoSumCase.expected);
-      
-      output += `Output: ${resultStr}\nExpected: ${expectedStr}\n\n`;
-      
-      const success = resultStr === expectedStr;
-      output += success ? '✓ Test case passed' : '✗ Test case failed - Wrong Answer';
-      resolve({ success, output });
-    } else if (problemType === 'valid-anagram') {
-      const anagramCase = testCase as ValidAnagramTestCase;
-      
-      output += `Output: ${result}\nExpected: ${anagramCase.expected}\n\n`;
-      
-      const success = result === anagramCase.expected;
-      output += success ? '✓ Test case passed' : '✗ Test case failed - Wrong Answer';
-      resolve({ success, output });
-    } else if (problemType === 'contains-duplicate') {  
-      const containsDuplicateCase = testCase as ContainsDuplicateTestCase;
-      
-      output += `Output: ${result}\nExpected: ${containsDuplicateCase.expected}\n\n`;
-      
-      const success = result === containsDuplicateCase.expected;
-      output += success ? '✓ Test case passed' : '✗ Test case failed - Wrong Answer';
-      resolve({ success, output });
-    }
-    
-  } catch (execError: unknown) {
-    const errorMessage = execError instanceof Error ? execError.message : 'Unknown error occurred';
-    resolve({
-      success: false,
-      output: '',
-      error: `Runtime Error\n\n${errorMessage}`
-    });
-  }
-};
-
-// Placeholder execution for other languages
-    const executeOtherLanguage = (
-      testCase: TestCase, 
-      problemType: string, 
-      resolve: (value: { success: boolean; output: string; error?: string }) => void
-    ) => {  setTimeout(() => {
-    const output = formatInput(testCase, problemType);
-    
-    if (problemType === 'two-sum') {
-      const twoSumCase = testCase as TwoSumTestCase;
-      resolve({
-        success: true,
-        output: output + `Output: [${twoSumCase.expected.join(',')}]\nExpected: [${twoSumCase.expected.join(',')}]\n\n✓ Test case passed`
-      });
-    } else if (problemType === 'valid-anagram') {
-      const anagramCase = testCase as ValidAnagramTestCase;
-      resolve({
-        success: true,
-        output: output + `Output: ${anagramCase.expected}\nExpected: ${anagramCase.expected}\n\n✓ Test case passed`
-      });
-    } else if (problemType === 'contains-duplicate') {  // ADD THIS
-      const containsDuplicateCase = testCase as ContainsDuplicateTestCase;
-      resolve({
-        success: true,
-        output: output + `Output: ${containsDuplicateCase.expected}\nExpected: ${containsDuplicateCase.expected}\n\n✓ Test case passed`
-      });
-    }
-  }, 1000);
-};
-
 const TestCaseEditor = React.memo(({ 
   testCase, 
   onUpdate,
@@ -477,51 +270,50 @@ const TestCaseEditor = React.memo(({
         </div>
       </div>
     );
-  } 
-  else if (problemType === 'contains-duplicate') {
-  const containsDuplicateCase = testCase as ContainsDuplicateTestCase;
-  
-  const parseArrayInput = (input: string): number[] => {
-    try {
-      const cleanInput = input.replace(/[\[\]]/g, '').trim();
-      if (!cleanInput) return [];
-      return cleanInput.split(',').map(num => parseInt(num.trim(), 10)).filter(num => !isNaN(num));
-    } catch {
-      return [];
-    }
-  };
+  } else if (problemType === 'contains-duplicate') {
+    const containsDuplicateCase = testCase as ContainsDuplicateTestCase;
+    
+    const parseArrayInput = (input: string): number[] => {
+      try {
+        const cleanInput = input.replace(/[\[\]]/g, '').trim();
+        if (!cleanInput) return [];
+        return cleanInput.split(',').map(num => parseInt(num.trim(), 10)).filter(num => !isNaN(num));
+      } catch {
+        return [];
+      }
+    };
 
-  return (
-    <div className="space-y-3">
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">nums =</label>
-        <input
-          type="text"
-          defaultValue={`[${containsDuplicateCase.nums.join(', ')}]`}
-          onBlur={(e) => {
-            const newNums = parseArrayInput(e.target.value);
-            onUpdate(containsDuplicateCase.id, 'nums', newNums);
-          }}
-          className="w-full p-3 border border-gray-300 rounded font-mono text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-          placeholder="[1, 2, 3, 1]"
-        />
+    return (
+      <div className="space-y-3">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">nums =</label>
+          <input
+            type="text"
+            defaultValue={`[${containsDuplicateCase.nums.join(', ')}]`}
+            onBlur={(e) => {
+              const newNums = parseArrayInput(e.target.value);
+              onUpdate(containsDuplicateCase.id, 'nums', newNums);
+            }}
+            className="w-full p-3 border border-gray-300 rounded font-mono text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+            placeholder="[1, 2, 3, 1]"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">expected =</label>
+          <select
+            defaultValue={containsDuplicateCase.expected.toString()}
+            onChange={(e) => {
+              onUpdate(containsDuplicateCase.id, 'expected', e.target.value === 'true');
+            }}
+            className="w-full p-3 border border-gray-300 rounded font-mono text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+          >
+            <option value="true">true</option>
+            <option value="false">false</option>
+          </select>
+        </div>
       </div>
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">expected =</label>
-        <select
-          defaultValue={containsDuplicateCase.expected.toString()}
-          onChange={(e) => {
-            onUpdate(containsDuplicateCase.id, 'expected', e.target.value === 'true');
-          }}
-          className="w-full p-3 border border-gray-300 rounded font-mono text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-        >
-          <option value="true">true</option>
-          <option value="false">false</option>
-        </select>
-      </div>
-    </div>
-  );
-}
+    );
+  }
   
   return null;
 });
@@ -530,23 +322,38 @@ TestCaseEditor.displayName = 'TestCaseEditor';
 
 export default function ProblemPage() {
   const { slug } = useParams() as { slug: string };
-  const problem = problems.find((p) => p.slug === slug);
+  
+  // Fetch problem from database
+  const { problem, loading, error, refetch } = useProblem(slug);
+  const { executeCode, loading: executing } = useCodeExecution();
 
   const [activeLeftTab, setActiveLeftTab] = useState('Question');
   const [activeBottomTab, setActiveBottomTab] = useState('Test Case');
   const [selectedLanguage, setSelectedLanguage] = useState<Language>('Java');
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [code, setCode] = useState('');
-  const [isRunning, setIsRunning] = useState(false);
   const [output, setOutput] = useState('');
   const [activeTestCase, setActiveTestCase] = useState(1);
 
-const problemType = slug === 'two-sum' ? 'two-sum' : 
+  // Determine problem type from slug
+  const problemType = slug === 'two-sum' ? 'two-sum' : 
                    slug === 'valid-anagram' ? 'valid-anagram' : 
                    slug === 'contains-duplicate' ? 'contains-duplicate' : 
                    'two-sum';
-                   
-  const getLanguageTemplates = (problemType: string): { [key in Language]: string } => {
+
+  // Language templates - use from database or fallback
+  const getLanguageTemplates = (): { [key in Language]: string } => {
+    // If we have starter code from database, use it
+    if (problem?.starterCode && Object.keys(problem.starterCode).length > 0) {
+      return {
+        'JavaScript': problem.starterCode.JavaScript || problem.starterCode.javascript || '',
+        'Python': problem.starterCode.Python || problem.starterCode.python || '',
+        'Java': problem.starterCode.Java || problem.starterCode.java || '',
+        'C++': problem.starterCode['C++'] || problem.starterCode.cpp || ''
+      };
+    }
+
+    // Fallback templates based on problem type
     if (problemType === 'two-sum') {
       return {
         'JavaScript': `/**\n * @param {number[]} nums\n * @param {number} target\n * @return {number[]}\n */\nvar twoSum = function(nums, target) {\n    // Write your solution here\n    \n};`,
@@ -569,36 +376,104 @@ const problemType = slug === 'two-sum' ? 'two-sum' :
         'C++': `class Solution {\npublic:\n    bool containsDuplicate(vector<int>& nums) {\n        // Write your solution here\n        \n    }\n};`
       };
     }
-    return getLanguageTemplates('two-sum');
+    
+    // Default fallback
+    return {
+      'JavaScript': '// Write your solution here',
+      'Python': '# Write your solution here',
+      'Java': 'class Solution {\n    // Write your solution here\n}',
+      'C++': 'class Solution {\n    // Write your solution here\n};'
+    };
   };
 
-  const languageTemplates = getLanguageTemplates(problemType);
-
-  const getDefaultTestCases = (problemType: string): TestCase[] => {
-    if (problemType === 'two-sum') {
-      return [
-        { id: 1, type: 'two-sum', nums: [2, 7, 11, 15], target: 9, expected: [0, 1] },
-        { id: 2, type: 'two-sum', nums: [3, 2, 4], target: 6, expected: [1, 2] },
-        { id: 3, type: 'two-sum', nums: [3, 3], target: 6, expected: [0, 1] }
-      ];
-    } else if (problemType === 'valid-anagram') {
-      return [
-        { id: 1, type: 'valid-anagram', s: 'anagram', t: 'nagaram', expected: true },
-        { id: 2, type: 'valid-anagram', s: 'rat', t: 'car', expected: false },
-        { id: 3, type: 'valid-anagram', s: 'listen', t: 'silent', expected: true }
-      ];
-    } else if (problemType === 'contains-duplicate') {
-      return [
-        { id: 1, type: 'contains-duplicate', nums: [1, 2, 3, 1], expected: true },
-        { id: 2, type: 'contains-duplicate', nums: [1, 2, 3, 4], expected: false },
-        { id: 3, type: 'contains-duplicate', nums: [1, 1, 1, 3, 3, 4, 3, 2, 4, 2], expected: true }
-      ];
+  // Convert database test cases to frontend format
+  const getTestCasesFromProblem = (): TestCase[] => {
+    if (!problem?.testCases || problem.testCases.length === 0) {
+      // Fallback test cases
+      if (problemType === 'two-sum') {
+        return [
+          { id: 1, type: 'two-sum', nums: [2, 7, 11, 15], target: 9, expected: [0, 1] },
+          { id: 2, type: 'two-sum', nums: [3, 2, 4], target: 6, expected: [1, 2] },
+          { id: 3, type: 'two-sum', nums: [3, 3], target: 6, expected: [0, 1] }
+        ];
+      } else if (problemType === 'valid-anagram') {
+        return [
+          { id: 1, type: 'valid-anagram', s: 'anagram', t: 'nagaram', expected: true },
+          { id: 2, type: 'valid-anagram', s: 'rat', t: 'car', expected: false },
+          { id: 3, type: 'valid-anagram', s: 'listen', t: 'silent', expected: true }
+        ];
+      } else if (problemType === 'contains-duplicate') {
+        return [
+          { id: 1, type: 'contains-duplicate', nums: [1, 2, 3, 1], expected: true },
+          { id: 2, type: 'contains-duplicate', nums: [1, 2, 3, 4], expected: false },
+          { id: 3, type: 'contains-duplicate', nums: [1, 1, 1, 3, 3, 4, 3, 2, 4, 2], expected: true }
+        ];
+      }
     }
 
-    return getDefaultTestCases('two-sum');
+    // Convert database test cases
+    return problem.testCases.map((testCase: any, index: number) => {
+      if (problemType === 'two-sum') {
+        return {
+          id: index + 1,
+          type: 'two-sum' as const,
+          nums: testCase.inputData?.nums || [2, 7, 11, 15],
+          target: testCase.inputData?.target || 9,
+          expected: testCase.expectedOutput || [0, 1]
+        };
+      } else if (problemType === 'valid-anagram') {
+        return {
+          id: index + 1,
+          type: 'valid-anagram' as const,
+          s: testCase.inputData?.s || 'anagram',
+          t: testCase.inputData?.t || 'nagaram',
+          expected: testCase.expectedOutput || true
+        };
+      } else if (problemType === 'contains-duplicate') {
+        return {
+          id: index + 1,
+          type: 'contains-duplicate' as const,
+          nums: testCase.inputData?.nums || [1, 2, 3, 1],
+          expected: testCase.expectedOutput || true
+        };
+      }
+      return {
+        id: index + 1,
+        type: 'two-sum' as const,
+        nums: [2, 7, 11, 15],
+        target: 9,
+        expected: [0, 1]
+      };
+    });
   };
 
-  const [testCases, setTestCases] = useState<TestCase[]>(getDefaultTestCases(problemType));
+  const [testCases, setTestCases] = useState<TestCase[]>([]);
+  const [languageTemplates, setLanguageTemplates] = useState<{ [key in Language]: string }>({
+    'JavaScript': '',
+    'Python': '',
+    'Java': '',
+    'C++': ''
+  });
+
+  // Initialize data when problem loads - FIXED: proper dependency array
+  useEffect(() => {
+    if (problem) {
+      console.log('Setting up problem data for:', problem.title);
+      const templates = getLanguageTemplates();
+      const cases = getTestCasesFromProblem();
+      
+      setLanguageTemplates(templates);
+      setTestCases(cases);
+      setCode(templates[selectedLanguage] || templates['Java'] || '');
+    }
+  }, [problem?.id]); // FIXED: Only depend on problem.id to avoid infinite loop
+
+  // Update code when language changes - FIXED: separate useEffect
+  useEffect(() => {
+    if (languageTemplates[selectedLanguage]) {
+      setCode(languageTemplates[selectedLanguage]);
+    }
+  }, [selectedLanguage, languageTemplates]);
 
   const addTestCase = () => {
     const newId = Math.max(...testCases.map(tc => tc.id)) + 1;
@@ -609,7 +484,7 @@ const problemType = slug === 'two-sum' ? 'two-sum' :
     } else if (problemType === 'valid-anagram') {
       newTestCase = { id: newId, type: 'valid-anagram', s: 'test', t: 'sett', expected: true };
     } else {
-      newTestCase = { id: newId, type: 'two-sum', nums: [1, 2], target: 3, expected: [0, 1] };
+      newTestCase = { id: newId, type: 'contains-duplicate', nums: [1, 2, 3, 1], expected: true };
     }
     
     setTestCases([...testCases, newTestCase]);
@@ -631,18 +506,99 @@ const problemType = slug === 'two-sum' ? 'two-sum' :
     }
   };
 
-  useEffect(() => {
-    setCode(languageTemplates[selectedLanguage]);
-  }, [selectedLanguage, problemType]);
+  const handleLanguageChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedLanguage(event.target.value as Language);
+  };
 
-  useEffect(() => {
-    setTestCases(getDefaultTestCases(problemType));
-    setActiveTestCase(1);
-  }, [problemType]);
+  const handleReset = () => {
+    setCode(languageTemplates[selectedLanguage] || '');
+    setOutput('');
+  };
 
-  useEffect(() => {
-    setCode(languageTemplates['Java']);
-  }, []);
+  const handleRun = async () => {
+    setActiveBottomTab('Output');
+    
+    const currentTestCase = testCases.find(tc => tc.id === activeTestCase);
+    if (!currentTestCase) return;
+    
+    try {
+      const result = await executeCode({
+        code,
+        testCases: [currentTestCase],
+        problemType,
+        language: selectedLanguage
+      });
+      
+      if (result.error) {
+        setOutput(result.error);
+      } else if (result.results && result.results.length > 0) {
+        const testResult = result.results[0];
+        
+        let output = `Input:\n`;
+        
+        if (problemType === 'two-sum') {
+          const twoSumCase = currentTestCase as TwoSumTestCase;
+          output += `nums=[${twoSumCase.nums.join(',')}], target=${twoSumCase.target}\n\n`;
+        } else if (problemType === 'valid-anagram') {
+          const anagramCase = currentTestCase as ValidAnagramTestCase;
+          output += `s="${anagramCase.s}", t="${anagramCase.t}"\n\n`;
+        } else if (problemType === 'contains-duplicate') {
+          const containsDuplicateCase = currentTestCase as ContainsDuplicateTestCase;
+          output += `nums=[${containsDuplicateCase.nums.join(',')}]\n\n`;
+        }
+        
+        if (testResult.error) {
+          setOutput(testResult.error);
+          return;
+        }
+        
+        output += `Your Output:\n${testResult.actualOutput}\n\n`;
+        output += `Expected:\n${testResult.expectedOutput}`;
+        output += testResult.success ? '\n\n✅ Test case passed!' : '\n\n❌ Test case failed!';
+        
+        setOutput(output);
+      }
+    } catch (error) {
+      console.error('Code execution error:', error);
+      setOutput(`Execution Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  };
+
+  const handleSubmit = () => {
+    alert('Submission functionality will be implemented with backend integration');
+  };
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-green-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-lg text-gray-600">Loading problem from database...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="text-6xl mb-4">⚠️</div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Problem Not Found</h1>
+          <p className="text-gray-600 mb-4">Could not load problem from database.</p>
+          <p className="text-red-600 mb-6">{error}</p>
+          <button
+            onClick={refetch}
+            className="px-6 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition-colors"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (!problem) {
     return (
@@ -654,37 +610,6 @@ const problemType = slug === 'two-sum' ? 'two-sum' :
       </div>
     );
   }
-
-  const handleLanguageChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    setSelectedLanguage(event.target.value as Language);
-  };
-
-  const handleReset = () => {
-    setCode(languageTemplates[selectedLanguage]);
-    setOutput('');
-  };
-
-  const handleRun = async () => {
-    setIsRunning(true);
-    setActiveBottomTab('Output');
-    
-    const currentTestCase = testCases.find(tc => tc.id === activeTestCase);
-    if (!currentTestCase) return;
-    
-    const result = await executeCode(code, selectedLanguage, currentTestCase, problemType);
-    
-    if (result.error) {
-      setOutput(result.error);
-    } else {
-      setOutput(result.output);
-    }
-    
-    setIsRunning(false);
-  };
-
-  const handleSubmit = () => {
-    alert('Submission functionality will be implemented with backend integration');
-  };
 
   const LeftSidebar = () => (
     <div className="w-1/2 bg-white border-r border-gray-200 flex flex-col">
@@ -722,9 +647,9 @@ const problemType = slug === 'two-sum' ? 'two-sum' :
               </div>
               
               <div className="prose max-w-none">
-                <div className="text-gray-700 mb-6 whitespace-pre-wrap">
-                  {problem.description}
-                </div>
+                  <div className="prose prose-gray max-w-none [&>*]:mb-3 [&>h3]:text-base [&>h3]:font-semibold [&>code]:bg-gray-100 [&>code]:px-1 [&>code]:rounded">
+                    <ReactMarkdown>{problem.description}</ReactMarkdown>
+                  </div>
 
                 <div className="space-y-4">
                   <div>
@@ -736,6 +661,24 @@ const problemType = slug === 'two-sum' ? 'two-sum' :
                       </div>
                     </div>
                   </div>
+
+                  {problem.constraints && (
+                    <div>
+                      <h3 className="font-semibold text-gray-900 mb-2">Constraints:</h3>
+                      <div className="text-gray-700 whitespace-pre-wrap">{problem.constraints}</div>
+                    </div>
+                  )}
+
+                  {problem.hints && problem.hints.length > 0 && (
+                    <div>
+                      <h3 className="font-semibold text-gray-900 mb-2">Hints:</h3>
+                      <ul className="list-disc list-inside space-y-1">
+                        {problem.hints.map((hint: string, index: number) => (
+                          <li key={index} className="text-gray-700">{hint}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -788,10 +731,10 @@ const problemType = slug === 'two-sum' ? 'two-sum' :
         <div className="flex items-center gap-2">
           <button
             onClick={handleRun}
-            disabled={isRunning}
+            disabled={executing}
             className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            {isRunning ? (
+            {executing ? (
               <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
             ) : (
               <Play className="h-4 w-4" />
