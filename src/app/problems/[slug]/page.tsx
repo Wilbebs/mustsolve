@@ -388,7 +388,7 @@ export default function ProblemPage() {
 
   // Convert database test cases to frontend format
   const getTestCasesFromProblem = (): TestCase[] => {
-    if (!problem?.testCases || problem.testCases.length === 0) {
+    if (!problem?.testCases || problem?.testCases?.length === 0) {
       // Fallback test cases
       if (problemType === 'two-sum') {
         return [
@@ -412,7 +412,7 @@ export default function ProblemPage() {
     }
 
     // Convert database test cases
-    return problem.testCases.map((testCase: any, index: number) => {
+    return problem?.testCases?.map((testCase: any, index: number) => {
       if (problemType === 'two-sum') {
         return {
           id: index + 1,

@@ -27,9 +27,9 @@ const PracticePage = () => {
   }, []);
 
   // Filter categories based on search
-  const filteredCategories = categories.filter(category =>
+  const filteredCategories = categories.filter((category: any) =>
     category.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    category.problems.some(problem => 
+    category.problems.some((problem:any) => 
       problem.title.toLowerCase().includes(searchTerm.toLowerCase())
     )
   );
@@ -219,7 +219,7 @@ const PracticePage = () => {
           initial="hidden"
           animate="visible"
         >
-          {filteredCategories.map((category, index) => (
+          {filteredCategories.map((category: any, index: number) => (
             <motion.div 
               key={category.id} 
               className="relative group"
@@ -280,10 +280,10 @@ const PracticePage = () => {
                       className="border-t border-gray-700"
                     >
                       {category.problems
-                        .filter(problem => 
+                        .filter((problem: any) => 
                           selectedDifficulty === 'all' || problem.difficulty === selectedDifficulty
                         )
-                        .map((problem, problemIndex) => (
+                        .map((problem: any, problemIndex: number) => (
                         <motion.div
                           key={problem.id}
                           className="flex items-center justify-between p-4 hover:bg-gray-800/30 transition-colors border-b border-gray-800 last:border-b-0 cursor-pointer"
@@ -340,7 +340,7 @@ const PracticePage = () => {
           {[
             { 
               title: "Problems Solved", 
-              value: categories.reduce((sum, cat) => sum + cat.completed, 0),
+              value: categories.reduce((sum: number, cat: any) => sum + cat.completed, 0),
               icon: "🎯",
               color: "from-green-400 to-emerald-500"
             },
