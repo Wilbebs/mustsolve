@@ -7,10 +7,13 @@ const pool = new Pool({
   database: process.env.DB_NAME,
   user: process.env.DB_USER,
   password: String(process.env.DB_PASSWORD),
-  ssl: false,
+  ssl: {
+    rejectUnauthorized: false,  // Required for RDS connections
+    ca: undefined  // Let AWS handle the certificate
+  },
   max: 5,
   idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 5000,
+  connectionTimeoutMillis: 10000, // Increased timeout
 });
 
 const testConnection = async () => {
@@ -22,10 +25,19 @@ const testConnection = async () => {
     return true;
   } catch (err) {
     console.error('❌ Database connection error:', err.message);
+    console.error('Connection details:', {
+      host: process.env.DB_HOST,
+      port: process.env.DB_PORT,
+      database: process.env.DB_NAME,
+      user: process.env.DB_USER,
+      // Don't log the actual password, just whether it exists
+      passwordSet: !!process.env.DB_PASSWORD
+    });
     return false;
   }
 };
 
+// Rest of your database functions remain the same...
 const getAllProblems = async () => {
   const query = `
     SELECT 
