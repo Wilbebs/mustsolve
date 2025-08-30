@@ -1,4 +1,5 @@
 // mustsolve-backend/server.js - Enhanced with Database Integration
+require('dotenv').config();
 const express = require('express');
 const fs = require('fs').promises;
 const path = require('path');
@@ -7,7 +8,7 @@ const { promisify } = require('util');
 const crypto = require('crypto');
 const cors = require('cors');
 const os = require('os');
-require('dotenv').config();
+const { pool } = require('./src/services/database');
 
 // Import database service
 const db = require('./src/services/database');
@@ -175,6 +176,28 @@ app.get('/api/stats', async (req, res) => {
       message: 'Failed to fetch statistics',
       error: error.message
     });
+  }
+});
+
+// Add this to your server.js temporarily
+app.get('/api/migrate', async (req, res) => {
+  try {
+    // Test if we can connect first
+    const isConnected = await db.testConnection();
+    if (!isConnected) {
+      return res.status(500).json({ error: 'Database not connected' });
+    }
+    
+    // Since you already have database functions, let's create a simple migration
+    // We'll need to access the pool through the database service
+    // For now, let's just verify the connection works
+    res.json({ 
+      success: true, 
+      message: 'Database connected successfully. Ready for manual migration.',
+      connected: isConnected 
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 });
 
@@ -424,6 +447,22 @@ app.post('/api/problems/:slug/submit', async (req, res) => {
       message: 'Failed to submit solution',
       error: error.message
     });
+  }
+});
+
+// Export data endpoint
+app.get('/api/export', async (req, res) => {
+  try {
+    const problems = await db.getAllProblems();
+    const categories = await db.getAllCategories();
+    
+    res.json({
+      problems,
+      categories,
+      message: 'Copy this JSON data to migrate to Supabase'
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 });
 
