@@ -1,8 +1,11 @@
 // File: src/services/apiService.js
 // Frontend API service for communicating with the MustSolve backend
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-
+// In your existing src/services/apiService.js
+const API_BASE_URL = process.env.NODE_ENV === 'production' 
+  ? (process.env.NEXT_PUBLIC_API_URL || 'https://mustsolve-47w331nym-hernwilbwork-gmailcoms-projects.vercel.app/api')
+  : (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api');
+  
 class ApiService {
   constructor() {
     this.baseURL = API_BASE_URL;
