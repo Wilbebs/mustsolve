@@ -1,4 +1,4 @@
-// mustsolve-backend/src/services/database.js
+// mustsolve-backend/src/services/database.js - Clean database-only version
 const { Pool } = require('pg');
 
 const pool = new Pool({
@@ -8,12 +8,12 @@ const pool = new Pool({
   user: process.env.DB_USER,
   password: String(process.env.DB_PASSWORD),
   ssl: {
-    rejectUnauthorized: false,  // Required for RDS connections
-    ca: undefined  // Let AWS handle the certificate
+    rejectUnauthorized: false,
+    ca: undefined
   },
   max: 5,
   idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 10000, // Increased timeout
+  connectionTimeoutMillis: 10000,
 });
 
 const testConnection = async () => {
@@ -30,31 +30,46 @@ const testConnection = async () => {
       port: process.env.DB_PORT,
       database: process.env.DB_NAME,
       user: process.env.DB_USER,
-      // Don't log the actual password, just whether it exists
       passwordSet: !!process.env.DB_PASSWORD
     });
     return false;
   }
 };
 
-// Rest of your database functions remain the same...
-const getAllProblems = async () => {
-  const query = `
+const getAllProblems = async (filters = {}) => {
+  let query = `
     SELECT 
-      id,
-      slug,
-      title,
-      difficulty,
-      category,
-      is_active,
-      created_at
+      id, slug, title, difficulty, category, is_active, created_at
     FROM problems 
-    WHERE is_active = true 
-    ORDER BY created_at ASC
+    WHERE is_active = true
   `;
   
+  const queryParams = [];
+  let paramIndex = 1;
+  
+  // Add filters
+  if (filters.category) {
+    query += ` AND category = $${paramIndex}`;
+    queryParams.push(filters.category);
+    paramIndex++;
+  }
+  
+  if (filters.difficulty) {
+    query += ` AND difficulty = $${paramIndex}`;
+    queryParams.push(filters.difficulty);
+    paramIndex++;
+  }
+  
+  if (filters.search) {
+    query += ` AND (title ILIKE $${paramIndex} OR category ILIKE $${paramIndex})`;
+    queryParams.push(`%${filters.search}%`);
+    paramIndex++;
+  }
+  
+  query += ` ORDER BY created_at ASC`;
+  
   try {
-    const result = await pool.query(query);
+    const result = await pool.query(query, queryParams);
     return result.rows.map(row => ({
       id: row.id,
       slug: row.slug,
@@ -102,12 +117,14 @@ const getProblemBySlug = async (slug) => {
     
     const problem = problemResult.rows[0];
     
+    // Get starter code
     const starterCodeResult = await pool.query(starterCodeQuery, [problem.id]);
     const starterCode = {};
     starterCodeResult.rows.forEach(row => {
       starterCode[row.language] = row.code;
     });
     
+    // Get test cases
     const testCasesResult = await pool.query(testCasesQuery, [problem.id]);
     const testCases = testCasesResult.rows.map(row => ({
       inputData: row.input_data,
@@ -169,6 +186,32 @@ const getAllCategories = async () => {
   }
 };
 
+const getProblemsByCategory = async (categoryName) => {
+  const query = `
+    SELECT 
+      id, slug, title, difficulty, category, is_active, created_at
+    FROM problems 
+    WHERE category = $1 AND is_active = true 
+    ORDER BY created_at ASC
+  `;
+  
+  try {
+    const result = await pool.query(query, [categoryName]);
+    return result.rows.map(row => ({
+      id: row.id,
+      slug: row.slug,
+      title: row.title,
+      difficulty: row.difficulty,
+      category: row.category,
+      isActive: row.is_active,
+      createdAt: row.created_at
+    }));
+  } catch (err) {
+    console.error('Error fetching problems by category:', err);
+    throw new Error('Failed to fetch problems by category');
+  }
+};
+
 const getDashboardStats = async () => {
   const query = `
     SELECT 
@@ -197,6 +240,39 @@ const getDashboardStats = async () => {
   }
 };
 
+const searchProblems = async (searchTerm) => {
+  const query = `
+    SELECT 
+      id, slug, title, difficulty, category, is_active, created_at
+    FROM problems 
+    WHERE is_active = true 
+    AND (title ILIKE $1 OR category ILIKE $1 OR problem_statement ILIKE $1)
+    ORDER BY 
+      CASE 
+        WHEN title ILIKE $1 THEN 1
+        WHEN category ILIKE $1 THEN 2
+        ELSE 3
+      END,
+      created_at ASC
+  `;
+  
+  try {
+    const result = await pool.query(query, [`%${searchTerm}%`]);
+    return result.rows.map(row => ({
+      id: row.id,
+      slug: row.slug,
+      title: row.title,
+      difficulty: row.difficulty,
+      category: row.category,
+      isActive: row.is_active,
+      createdAt: row.created_at
+    }));
+  } catch (err) {
+    console.error('Error searching problems:', err);
+    throw new Error('Failed to search problems');
+  }
+};
+
 const closePool = async () => {
   await pool.end();
   console.log('Database pool closed');
@@ -207,7 +283,9 @@ module.exports = {
   getAllProblems,
   getProblemBySlug,
   getAllCategories,
+  getProblemsByCategory,
   getDashboardStats,
+  searchProblems,
   closePool,
   pool
 };

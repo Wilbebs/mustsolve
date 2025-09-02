@@ -1,4 +1,4 @@
-// File: src/app/problems/[slug]/page.tsx - Fixed version without infinite loop
+// File: src/app/problems/[slug]/page.tsx - Database-driven version only
 
 'use client';
 
@@ -6,7 +6,6 @@ import { useParams } from 'next/navigation';
 import React, { useState, useRef, useEffect } from 'react';
 import { Play, Maximize2, RotateCcw, ChevronDown } from 'lucide-react';
 import { useProblem, useCodeExecution } from '@/hooks/useApi';
-import ReactMarkdown from 'react-markdown';
 
 type Language = 'JavaScript' | 'Python' | 'Java' | 'C++';
 
@@ -455,7 +454,7 @@ export default function ProblemPage() {
     'C++': ''
   });
 
-  // Initialize data when problem loads - FIXED: proper dependency array
+  // Initialize data when problem loads
   useEffect(() => {
     if (problem) {
       console.log('Setting up problem data for:', problem.title);
@@ -466,9 +465,9 @@ export default function ProblemPage() {
       setTestCases(cases);
       setCode(templates[selectedLanguage] || templates['Java'] || '');
     }
-  }, [problem?.id]); // FIXED: Only depend on problem.id to avoid infinite loop
+  }, [problem?.id]);
 
-  // Update code when language changes - FIXED: separate useEffect
+  // Update code when language changes
   useEffect(() => {
     if (languageTemplates[selectedLanguage]) {
       setCode(languageTemplates[selectedLanguage]);
@@ -605,7 +604,7 @@ export default function ProblemPage() {
       <div className="h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-gray-900 mb-2">Problem not found</h1>
-          <p className="text-gray-600">The problem you're looking for doesn't exist.</p>
+          <p className="text-gray-600">The problem you're looking for doesn't exist in the database.</p>
         </div>
       </div>
     );
@@ -647,9 +646,9 @@ export default function ProblemPage() {
               </div>
               
               <div className="prose max-w-none">
-                  <div className="prose prose-gray max-w-none [&>*]:mb-3 [&>h3]:text-base [&>h3]:font-semibold [&>code]:bg-gray-100 [&>code]:px-1 [&>code]:rounded">
-                    <ReactMarkdown>{problem.description}</ReactMarkdown>
-                  </div>
+                <div className="text-gray-700 mb-6 whitespace-pre-wrap">
+                  {problem.description}
+                </div>
 
                 <div className="space-y-4">
                   <div>

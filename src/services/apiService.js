@@ -1,7 +1,6 @@
 // File: src/services/apiService.js
-// Frontend API service for communicating with the MustSolve backend
+// Frontend API service for communicating with the MustSolve backend - Database only
 
-// In your existing src/services/apiService.js
 const API_BASE_URL = process.env.NODE_ENV === 'production' 
   ? (process.env.NEXT_PUBLIC_API_URL || 'https://mustsolve-47w331nym-hernwilbwork-gmailcoms-projects.vercel.app/api')
   : (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api');
@@ -136,20 +135,20 @@ class ApiService {
     };
   }
 
-  // Transform database category to frontend format
+  // Transform database category to frontend format with proper color mapping
   transformCategory(dbCategory) {
     return {
       id: dbCategory.id,
       name: dbCategory.name,
       description: dbCategory.description,
-      color: this.getCategoryColor(dbCategory.name),
-      total: dbCategory.problemCount,
+      color: dbCategory.colorGradient || this.getCategoryColor(dbCategory.name),
+      total: dbCategory.problemCount || 0,
       completed: 0, // This would come from user progress in the future
       problems: [] // Populated separately when needed
     };
   }
 
-  // Get category color mapping (same as hardcoded frontend)
+  // Fallback color mapping if database doesn't have colors
   getCategoryColor(categoryName) {
     const colorMap = {
       'Arrays & Hashing': 'from-green-400 to-emerald-500',
@@ -158,7 +157,10 @@ class ApiService {
       'Stack': 'from-orange-400 to-red-500',
       'Binary Search': 'from-indigo-400 to-purple-500',
       'Linked List': 'from-teal-400 to-cyan-500',
-      'Trees': 'from-yellow-400 to-orange-500'
+      'Trees': 'from-yellow-400 to-orange-500',
+      'Dynamic Programming': 'from-pink-400 to-rose-500',
+      'Greedy': 'from-lime-400 to-green-500',
+      'Graphs': 'from-cyan-400 to-blue-500'
     };
     
     return colorMap[categoryName] || 'from-gray-400 to-gray-500';

@@ -1,5 +1,5 @@
 // File: src/hooks/useApi.js
-// React hooks for data fetching with loading states and error handling
+// React hooks for data fetching - Database only version
 
 'use client';
 
@@ -156,22 +156,22 @@ export function useSolutionSubmission() {
   return { submitSolution, loading, error };
 }
 
-// Combined hook for practice page
+// Combined hook for practice page - now fully database-driven
 export function usePracticeData(filters = {}) {
   const { problems, loading: problemsLoading, error: problemsError, refetch: refetchProblems } = useProblems(filters);
   const { categories, loading: categoriesLoading, error: categoriesError, refetch: refetchCategories } = useCategories();
   const { stats, loading: statsLoading, error: statsError, refetch: refetchStats } = useDashboardStats();
 
-  // Combine problems with categories
+  // Combine problems with categories from database
   const categoriesWithProblems = categories.map(category => {
     const categoryProblems = problems.filter(problem => problem.category === category.name);
     return {
       ...category,
       problems: categoryProblems,
       total: categoryProblems.length,
-      completed: categoryProblems.filter(p => p.completed).length
+      completed: categoryProblems.filter(p => p.completed || false).length // TODO: Get from user progress table
     };
-  });
+  }).filter(category => category.total > 0); // Only show categories that have problems
 
   return {
     categories: categoriesWithProblems,

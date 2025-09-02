@@ -1,4 +1,4 @@
-// File: src/app/practice/page.tsx - Database-driven version
+// File: src/app/practice/page.tsx - Fully database-driven version
 
 'use client';
 
@@ -14,7 +14,7 @@ const PracticePage = () => {
   const [selectedDifficulty, setSelectedDifficulty] = useState<string>('all');
   const [hoveredProblem, setHoveredProblem] = useState<number | null>(null);
 
-  // API data fetching
+  // API data fetching with filters
   const filters = {
     ...(selectedDifficulty !== 'all' && { difficulty: selectedDifficulty }),
     ...(searchTerm && { search: searchTerm })
@@ -26,10 +26,10 @@ const PracticePage = () => {
     setIsVisible(true);
   }, []);
 
-  // Filter categories based on search
+  // Filter categories based on search (client-side filtering for better UX)
   const filteredCategories = categories.filter((category: any) =>
     category.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    category.problems.some((problem:any) => 
+    category.problems.some((problem: any) => 
       problem.title.toLowerCase().includes(searchTerm.toLowerCase())
     )
   );
@@ -134,6 +134,9 @@ const PracticePage = () => {
             backgroundSize: '50px 50px'
           }}></div>
         </div>
+        
+        <div className="absolute top-1/6 left-1/3 w-64 h-64 bg-gradient-radial from-green-400/20 via-green-500/10 to-transparent rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute top-2/3 right-1/4 w-96 h-96 bg-gradient-radial from-emerald-400/15 via-green-600/8 to-transparent rounded-full blur-3xl animate-pulse delay-1000"></div>
       </div>
 
       <div className="relative z-10 w-full px-8 py-8">
@@ -329,7 +332,7 @@ const PracticePage = () => {
           ))}
         </motion.div>
 
-        {/* Stats Summary */}
+        {/* Stats Summary - Now from database */}
         <motion.div 
           className="grid grid-cols-1 md:grid-cols-4 gap-6"
           initial={{ opacity: 0, y: 50 }}
